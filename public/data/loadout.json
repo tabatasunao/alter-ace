@@ -1,0 +1,10 @@
+{
+  "slots": 4,
+  "enemyCount": { "min": 300, "max": 600, "step": 50 },
+  "defaultLoadout": {
+    "frame": "vanguard",
+    "slots": ["rifle", "missile", "bazooka", "repair"],
+    "aim": "closest",
+    "enemies": 450
+  }
+}

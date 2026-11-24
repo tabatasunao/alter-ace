@@ -1,0 +1,14 @@
+{
+  "allyMix": { "commander": 0.02, "bulwark": 0.12, "lancer": 0.08, "sentinel": 0.04, "hornet": 0.04, "striker": 0.18, "beamTrooper": 0.2 },
+  "enemyMix": { "commander": 0.015, "bulwark": 0.09, "lancer": 0.05, "sentinel": 0.045, "hornet": 0.035, "striker": 0.13, "prism": 0.06, "breacher": 0.07, "marksman": 0.005, "circus": 0.005, "duelist": 0.005, "beamTrooper": 0.18 },
+  "minimums": { "commander": 2 },
+  "fillerClass": "trooper",
+  "formation": { "spacing": 30, "jitter": 8, "columnsFactor": 0.5, "edgeMargin": 20 },
+  "battle": {
+    "allies": { "count": 100, "groups": 3, "x": 1450, "groupSpacing": 680 },
+    "enemies": { "initial": 240, "groups": 4, "x": 3750, "xJitter": 120, "groupSpacing": 620 },
+    "playerStartX": 1700
+  },
+  "reinforcements": { "battalion": 60, "interval": 25, "fieldThreshold": 150, "edgeOffset": 170, "yMargin": 650 },
+  "demo": { "allies": 110, "enemies": 140, "groups": 3, "allyX": 2150, "enemyX": 3650, "groupSpacing": 520, "cameraX": 2900 }
+}

@@ -1,0 +1,43 @@
+{
+  "frames": [
+    {
+      "id": "swift",
+      "code": "ALTER-S",
+      "name": "Swift",
+      "type": "Speed type",
+      "speed": 300,
+      "hp": 380,
+      "reloadMul": 1,
+      "rateMul": 1,
+      "toolMul": 1,
+      "dashCd": 1.4,
+      "desc": "Fastest frame with the shortest dash recharge. Outrun fire and pick your fights."
+    },
+    {
+      "id": "quickdraw",
+      "code": "ALTER-Q",
+      "name": "Quickdraw",
+      "type": "Fast-loading type",
+      "speed": 190,
+      "hp": 480,
+      "reloadMul": 0.45,
+      "rateMul": 0.8,
+      "toolMul": 0.7,
+      "dashCd": 3.2,
+      "desc": "Reloads in under half the time, fires 25% faster and recharges tools sooner. Slow, so get into position early."
+    },
+    {
+      "id": "vanguard",
+      "code": "ALTER-V",
+      "name": "Vanguard",
+      "type": "Balance type",
+      "speed": 245,
+      "hp": 440,
+      "reloadMul": 0.72,
+      "rateMul": 0.9,
+      "toolMul": 0.85,
+      "dashCd": 2.2,
+      "desc": "Good speed, solid HP and quicker reloads. No weak spot, no standout."
+    }
+  ]
+}

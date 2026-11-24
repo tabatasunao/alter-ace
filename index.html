@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>ALTER</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="world" aria-label="Battlefield"></canvas>
+
+      <section id="hangar" class="screen" aria-label="Hangar">
+        <div class="wrap">
+          <header class="brief">
+            <p class="eyebrow">Sortie briefing · Sectors A1 to F4</p>
+            <h1>ALTER<span class="sq" aria-hidden="true"></span></h1>
+            <p class="acro"><b>A</b>daptive <b>L</b>imbframe for <b>T</b>actical <b>E</b>ngagement and <b>R</b>econnaissance</p>
+            <p class="lede">You fly the ace unit. 100 friendly ALTERs hold the west line while an enemy army of 300 to 600 pushes in from the east, with reserves arriving in waves. Pick a frame, arm four hardpoints and choose how your pilot aims. Bring down the whole army.</p>
+          </header>
+
+          <div class="cols">
+            <div class="col">
+              <section class="block" aria-labelledby="h-frame">
+                <h2 id="h-frame">Frame</h2>
+                <div id="frames" class="frames"></div>
+              </section>
+
+              <section class="block" aria-labelledby="h-aim">
+                <h2 id="h-aim">Aim mode</h2>
+                <p class="hint">Your pilot fires on their own at the enemy this mode picks inside the active weapon's range. You can switch modes any time in battle.</p>
+                <div id="aims" class="aims"></div>
+              </section>
+
+              <section class="block" aria-labelledby="h-army">
+                <h2 id="h-army">Enemy army</h2>
+                <div class="army">
+                  <div class="army-row">
+                    <label for="enemyCount">Enemy ALTERs</label>
+                    <output id="enemyOut" for="enemyCount">450</output>
+                  </div>
+                  <input id="enemyCount" type="range" min="300" max="600" step="50" value="450">
+                  <div class="vs"><span><b class="p">1</b> ace</span><span><b class="a" id="vsAlly">100</b> friendly</span><span><b class="e" id="vsEnemy">450</b> hostile</span></div>
+                  <p class="hint" id="deployNote">Up to 240 deploy at the start. The rest arrive from the east in waves of up to 60.</p>
+                  <ul class="legend" id="legend"></ul>
+                </div>
+              </section>
+
+              <section class="block" aria-labelledby="h-controls">
+                <h2 id="h-controls">Controls</h2>
+                <dl class="controls">
+                  <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></dt><dd>Move. Arrow keys work too. On touch, drag anywhere on the field.</dd>
+                  <dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd>Switch to that weapon, or fire that tool. You can also tap the hardpoint.</dd>
+                  <dt><kbd>Q</kbd><kbd>E</kbd></dt><dd>Cycle aim mode. <kbd>5</kbd>–<kbd>0</kbd> picks one directly.</dd>
+                  <dt><kbd>Shift</kbd></dt><dd>Dash, with a moment of invulnerability.</dd>
+                  <dt><kbd>Space</kbd></dt><dd id="releaseHint">Super release: every weapon hardpoint fires at once.</dd>
+                  <dt><kbd>R</kbd></dt><dd>Reload the active weapon early.</dd>
+                  <dt><kbd>+</kbd><kbd>−</kbd></dt><dd>Zoom. The mouse wheel works too.</dd>
+                  <dt><kbd>P</kbd></dt><dd>Pause. Esc works too.</dd>
+                </dl>
+              </section>
+            </div>
+
+            <div class="col">
+              <section class="block" aria-labelledby="h-hard">
+                <h2 id="h-hard">Hardpoints <span class="count" id="hpCount">4 / 4</span></h2>
+                <p class="hint">Pick four. Weapons fire automatically while selected. Tools fire once when you press their key, then recharge. Weapons you aren't using keep reloading in the background.</p>
+                <div id="loadSlots" class="loadslots"></div>
+                <div id="arsenal" class="arsenal"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <div class="launchbar">
+          <div class="inner">
+            <p class="summary" id="summary"></p>
+            <button type="button" class="btn-primary btn" id="btnLaunch">Launch sortie</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="hud" hidden>
+        <div class="hud-top">
+          <div class="force enemy">
+            <div class="fl"><span class="dot"></span>Hostile</div>
+            <div class="fn"><b id="hEnemy">0</b><small id="hEnemyOf">/0</small></div>
+            <div class="fbar"><i id="hEnemyBar"></i></div>
+            <div class="fs" id="hReserve"></div>
+          </div>
+          <div class="force ally">
+            <div class="fl"><span class="dot"></span>Friendly</div>
+            <div class="fn"><b id="hAlly">100</b><small id="hAllyOf">/100</small></div>
+            <div class="fbar"><i id="hAllyBar"></i></div>
+            <div class="fs" id="hAllySub">Holding the line</div>
+          </div>
+          <div class="clock"><b id="hTime">0:00</b><span id="hKills">0 kills</span></div>
+          <div class="spacer"></div>
+          <div class="mm-wrap">
+            <canvas id="minimap" aria-label="Minimap"></canvas>
+            <button type="button" class="hbtn" id="btnPause" tabindex="-1">Pause</button>
+          </div>
+        </div>
+
+        <div id="banner" role="status" aria-live="polite"></div>
+
+        <div class="hud-bottom">
+          <div class="pilot">
+            <div class="pcode" id="pCode"></div>
+            <div class="hp" id="pHpWrap"><i id="pHp"></i></div>
+            <div class="prow">
+              <span class="hpt" id="pHpText"></span>
+              <span class="chip" id="pDash">Dash</span>
+              <span class="chip" id="pRelease">Release</span>
+              <span class="statuses" id="pStatuses"></span>
+            </div>
+          </div>
+          <div class="slots" id="slots"></div>
+          <div class="aim">
+            <div class="aim-head">Aim mode <kbd>Q</kbd><kbd>E</kbd></div>
+            <div class="aim-grid" id="aimGrid"></div>
+            <button type="button" class="aim-cycle" id="aimCycle" tabindex="-1">Aim: Closest</button>
+            <div class="touch-btns">
+              <button type="button" class="touch-btn release" id="btnRelease" tabindex="-1">Release</button>
+              <button type="button" class="touch-btn" id="btnDash" tabindex="-1">Dash</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section id="pause" class="overlay" hidden aria-label="Paused">
+        <div class="card">
+          <div>
+            <p class="eyebrow">Sortie paused</p>
+            <h2>Holding position</h2>
+          </div>
+          <dl class="pause-keys">
+            <dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd>Weapon or tool</dd>
+            <dt><kbd>Q</kbd><kbd>E</kbd> <kbd>5</kbd>–<kbd>0</kbd></dt><dd>Aim mode</dd>
+            <dt><kbd>Shift</kbd></dt><dd>Dash</dd>
+            <dt><kbd>Space</kbd></dt><dd>Super release</dd>
+            <dt><kbd>R</kbd></dt><dd>Reload</dd>
+          </dl>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="btnResume">Resume</button>
+            <button type="button" class="btn" id="btnAbandon">Abandon sortie</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="result" class="overlay" hidden aria-label="Sortie result">
+        <div class="card">
+          <div>
+            <p class="eyebrow" id="rEyebrow">Mission complete</p>
+            <h2 id="rTitle">Enemy army destroyed</h2>
+          </div>
+          <div class="rank" id="rRankWrap">
+            <span class="letter" id="rRank">A</span>
+            <p id="rRankText"></p>
+          </div>
+          <dl class="stats" id="rStats"></dl>
+          <div class="wkills" id="rWeapons"></div>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="btnAgain">Sortie again</button>
+            <button type="button" class="btn" id="btnHangar">Back to hangar</button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

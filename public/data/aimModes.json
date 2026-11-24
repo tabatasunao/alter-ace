@@ -1,0 +1,11 @@
+{
+  "reticleInterval": 0.12,
+  "modes": [
+    { "id": "closest", "name": "Closest", "strategy": "closest", "key": "5", "desc": "Nearest enemy in range." },
+    { "id": "furthest", "name": "Furthest", "strategy": "furthest", "key": "6", "desc": "Farthest enemy still in range." },
+    { "id": "weakest", "name": "Lowest HP", "strategy": "weakest", "key": "7", "desc": "Finish off damaged units." },
+    { "id": "strongest", "name": "Strongest", "strategy": "strongest", "key": "8", "desc": "Commanders, semi-aces and Bulwarks first." },
+    { "id": "cluster", "name": "Densest pack", "strategy": "cluster", "key": "9", "desc": "Middle of the biggest group. Best with blasts." },
+    { "id": "attackers", "name": "Attacking me", "strategy": "attackers", "key": "0", "desc": "Units shooting at you. Falls back to closest." }
+  ]
+}

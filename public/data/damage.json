@@ -1,0 +1,13 @@
+{
+  "types": [
+    { "id": "kinetic", "name": "Kinetic" },
+    { "id": "beam", "name": "Beam" },
+    { "id": "blast", "name": "Blast" }
+  ],
+  "armor": [
+    { "id": "standard", "name": "Standard", "vs": { "kinetic": 1, "beam": 1, "blast": 1 } },
+    { "id": "plate", "name": "Heavy plate", "vs": { "kinetic": 0.5, "beam": 1.5, "blast": 1 } },
+    { "id": "coating", "name": "Beam coating", "vs": { "kinetic": 1, "beam": 0.5, "blast": 1.5 } },
+    { "id": "reactive", "name": "Reactive armor", "vs": { "kinetic": 1.5, "beam": 1, "blast": 0.5 } }
+  ]
+}
