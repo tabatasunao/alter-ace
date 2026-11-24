@@ -28,13 +28,52 @@ export function buildCatalog(raw: Record<DataFileName, unknown>): Catalog {
   return new Catalog(data);
 }
 
+/** Seconds to wait before each retry of a failed data request (three retries). */
+export const RETRY_DELAYS = [0.5, 1, 2] as const;
+
+export interface LoadOptions {
+  /** Replaces the global `fetch` (tests). */
+  fetch?: (url: string, init: RequestInit) => Promise<Response>;
+  /** Waits `seconds` before a retry (tests replace it to skip the delay). */
+  wait?: (seconds: number) => Promise<void>;
+}
+
+const sleep = (seconds: number) => new Promise<void>((resolve) => setTimeout(resolve, seconds * 1000));
+
+/** Server errors, request timeouts and rate limiting can pass; a missing file (404) will not. */
+function isTransient(status: number): boolean {
+  return status >= 500 || status === 408 || status === 429;
+}
+
+/**
+ * Fetches `url`, retrying network errors and transient HTTP errors after each delay in
+ * RETRY_DELAYS. Throws on a non-transient error or when every attempt has failed.
+ */
+export async function fetchWithRetry(url: string, options: LoadOptions = {}): Promise<Response> {
+  const fetchFn = options.fetch ?? globalThis.fetch;
+  const wait = options.wait ?? sleep;
+  for (let attempt = 0; ; attempt++) {
+    const last = attempt === RETRY_DELAYS.length;
+    let res: Response;
+    try {
+      res = await fetchFn(url, { cache: 'no-store' });
+    } catch (err) {
+      if (last) throw new Error(`Failed to load ${url} (${(err as Error).message})`);
+      await wait(RETRY_DELAYS[attempt]!);
+      continue;
+    }
+    if (res.ok) return res;
+    if (last || !isTransient(res.status)) throw new Error(`Failed to load ${url} (HTTP ${res.status})`);
+    await wait(RETRY_DELAYS[attempt]!);
+  }
+}
+
 /** Fetches all tuning files at runtime, so a built game can be re-tuned without a rebuild. */
-export async function loadCatalog(baseUrl: string = import.meta.env.BASE_URL): Promise<Catalog> {
+export async function loadCatalog(baseUrl: string = import.meta.env.BASE_URL, options: LoadOptions = {}): Promise<Catalog> {
   const entries = await Promise.all(
     DATA_FILES.map(async (name) => {
       const url = `${baseUrl}data/${name}.json`;
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`Failed to load ${url} (HTTP ${res.status})`);
+      const res = await fetchWithRetry(url, options);
       try {
         return [name, await res.json()] as const;
       } catch (err) {

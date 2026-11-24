@@ -4,7 +4,7 @@ Every gameplay number lives in `public/data/*.json`. This page describes the fil
 
 - **Types:** [`src/data/types.ts`](../src/data/types.ts).
 - **Validation:** [`src/data/validate.ts`](../src/data/validate.ts): ids exist, shares fit, cross-file rules, the default loadout is legal. At boot the game also checks that every `behavior`, `effect`, `strategy` and `shape` named in the data has an implementation. Invalid data stops the game with a list of every problem. `npm test` runs the same checks.
-- **Loading:** the game fetches the files at runtime.
+- **Loading:** the game fetches the files at runtime. A request that fails with a network error or a server error (5xx, 408, 429) is retried up to three times, after 0.5 s, 1 s and 2 s (`src/data/load.ts`). A missing file or invalid JSON fails at once.
   - **Dev server** (`npm run dev`): saving a file reloads the data without a page reload. It applies immediately in the hangar and from the next sortie in battle.
   - **Build** (`dist/`): edit `dist/data/*.json` and refresh.
 - **After a change:** run `npm run docs` to regenerate [reference.md](reference.md), then `npm test`.

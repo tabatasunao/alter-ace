@@ -112,7 +112,7 @@ Checks that run on every `npm test`:
 | `tests/docs.test.ts` | `docs/reference.md` does not match the data, a relative link or `#anchor` in the docs is broken, or a page in `docs/` is not linked from `docs/README.md` |
 | `tests/simulation.test.ts` | Whole battles: deployment, reinforcements, victory, seeded replay |
 
-Other test files: `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `unitWeapons`, `semiAces`, `tools`, `aimModes`, `movement`, `loadout`, `ui`.
+Other test files: `load`, `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `unitWeapons`, `semiAces`, `tools`, `aimModes`, `movement`, `loadout`, `ui`.
 
 ## Debugging
 
