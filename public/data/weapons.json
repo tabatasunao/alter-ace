@@ -13,7 +13,8 @@
       "speed": 950,
       "spread": 0.025,
       "pierce": 2,
-      "desc": "Steady automatic fire. Each round pierces up to 2 ALTERs. Reliable at every stage of the battle."
+      "desc": "Steady automatic fire. Each round pierces up to 2 ALTERs. The only weapon that keeps firing during a dash.",
+      "fireWhileDashing": true
     },
     {
       "id": "gatling",
@@ -22,29 +23,23 @@
       "damageType": "kinetic",
       "dmg": 20,
       "range": 360,
-      "interval": 0.045,
+      "interval": 0.06,
       "mag": 150,
-      "reload": 3.5,
+      "reload": 3,
       "speed": 900,
       "spread": 0.08,
       "pierce": 1,
-      "desc": "A wall of rounds that each pierce 1 ALTER. Huge magazine, long reload."
-    },
-    {
-      "id": "scatter",
-      "name": "Scatter Cannon",
-      "behavior": "scatter",
-      "damageType": "kinetic",
-      "dmg": 34,
-      "pellets": 12,
-      "range": 310,
-      "interval": 0.65,
-      "mag": 8,
-      "reload": 2.0,
-      "speed": 800,
-      "spread": 0.2,
-      "speedJitter": 0.15,
-      "desc": "Twelve pellets per blast. Shreds anything up close."
+      "desc": "Spins up the longer it fires, from a trickle to a torrent. Heat instead of a magazine: let it cool or it locks up. Each round pierces 1 ALTER.",
+      "spin": {
+        "start": 0.35,
+        "top": 1.5,
+        "upTime": 2,
+        "downTime": 0.8
+      },
+      "heat": {
+        "coolPerSecond": 60,
+        "coolDelay": 0.4
+      }
     },
     {
       "id": "beamRifle",
@@ -60,7 +55,8 @@
       "pierce": 4,
       "radius": 4.8,
       "burstArc": 60,
-      "desc": "Fast beam that punches through up to five ALTERs in a line."
+      "desc": "Fast beam that punches through up to five ALTERs. Fires faster the faster you move.",
+      "movingFireInterval": 0.6
     },
     {
       "id": "rail",
@@ -74,7 +70,11 @@
       "reload": 3.2,
       "hitWidth": 7.2,
       "burstArc": 60,
-      "desc": "Hits instantly across its whole range and pierces every ALTER on the line."
+      "desc": "Hits instantly across its whole range and pierces every ALTER on the line. Hits hardest when you hold still.",
+      "steady": {
+        "still": 1.5,
+        "moving": 0.6
+      }
     },
     {
       "id": "missile",
@@ -102,20 +102,29 @@
       "desc": "Eight missiles launch backwards, then turn and home in, each on a different target."
     },
     {
-      "id": "bazooka",
-      "name": "Bazooka",
-      "behavior": "rocket",
-      "damageType": "blast",
-      "dmg": 100,
-      "splash": 117,
-      "splashDmg": 70,
-      "range": 440,
-      "interval": 0.95,
-      "mag": 4,
-      "reload": 2.6,
-      "speed": 540,
-      "radius": 5,
-      "desc": "Heavy rocket with a wide blast. Good against packed formations."
+      "id": "breach",
+      "name": "Breach Cannon",
+      "behavior": "breach",
+      "damageType": "kinetic",
+      "dmg": 40,
+      "pellets": 10,
+      "range": 280,
+      "interval": 0.62,
+      "mag": 8,
+      "reload": 2.2,
+      "speed": 800,
+      "spread": 0.24,
+      "speedJitter": 0.15,
+      "blastEvery": 4,
+      "blast": {
+        "radius": 160,
+        "offset": 90,
+        "dmg": 150,
+        "push": 500,
+        "pushTime": 0.22
+      },
+      "recoil": 280,
+      "desc": "Point-blank pellets, and every fourth shot a blast that throws enemies back and kicks you clear."
     },
     {
       "id": "mortar",
@@ -124,30 +133,35 @@
       "damageType": "blast",
       "dmg": 0,
       "splash": 180,
-      "splashDmg": 95,
+      "splashDmg": 105,
       "range": 580,
       "interval": 1.8,
       "mag": 2,
       "reload": 4.2,
       "flight": 0.9,
       "leadFactor": 0.8,
-      "desc": "Lobbed shell that lands where the target is heading. Huge blast."
+      "stun": {
+        "radius": 80,
+        "time": 1,
+        "exposedMul": 1.5
+      },
+      "desc": "Lobbed shell that lands where the target is heading. Huge blast; the center stuns, and stunned enemies take 1.5x damage from your side."
     },
     {
       "id": "saber",
       "name": "Beam Saber",
       "behavior": "saber",
       "damageType": "beam",
-      "dmg": 120,
-      "range": 120,
+      "dmg": 140,
+      "range": 165,
       "interval": 0.7,
       "mag": null,
       "reload": 0,
-      "slash": 105,
-      "arcHalfAngle": 0.8,
-      "closeRange": 30,
+      "slash": 150,
+      "arcHalfAngle": 1.1,
+      "closeRange": 45,
       "lungeDuration": 0.11,
-      "stopDistance": 30,
+      "stopDistance": 40,
       "iframes": 0.12,
       "desc": "Lunge in and cut everything in an arc in front of you. Never needs reloading."
     }

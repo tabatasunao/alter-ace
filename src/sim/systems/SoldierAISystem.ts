@@ -1,4 +1,5 @@
 import { clamp } from '../../core/math';
+import { closeFireRate, closeness } from '../ai/aim';
 import { leashHeading } from '../ai/leash';
 import { chooseTarget } from '../ai/targetSelection';
 import { unitBehaviorFor } from '../ai/weapons/registry';
@@ -21,6 +22,8 @@ export class SoldierAISystem implements System {
 
   private think(world: World, u: Soldier, dt: number): void {
     if (u.flash > 0) u.flash -= dt;
+    if (u.stagger > 0) u.stagger -= dt;
+    if (u.exposedT > 0) u.exposedT -= dt;
     if (u.buffT > 0) u.buffT -= dt;
     if (u.stunT > 0) {
       u.stunT -= dt;
@@ -65,8 +68,12 @@ export class SoldierAISystem implements System {
       }
       u.cd -= dt * (u.buffT > 0 ? u.buffMul : 1);
       if (u.cd <= 0 && d <= w.range && !u.action) {
-        unitBehaviorFor(w).fire({ world, unit: u, weapon: w, target: t });
-        u.cd = w.interval * random.range(1 - ai.fireIntervalJitter, 1 + ai.fireIntervalJitter);
+        if (unitBehaviorFor(w).fire({ world, unit: u, weapon: w, target: t }) === false) {
+          u.cd = ai.aceCharges.retry;
+        } else {
+          const rate = closeFireRate(closeness(t, d, ai.closeAim), ai.closeAim);
+          u.cd = (w.interval * random.range(1 - ai.fireIntervalJitter, 1 + ai.fireIntervalJitter)) / rate;
+        }
       }
     } else {
       if (u.cd > 0) u.cd -= dt;

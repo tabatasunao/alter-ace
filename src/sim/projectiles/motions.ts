@@ -9,6 +9,8 @@ import {
   type ShotOfKind,
   type Unit,
 } from '../entities';
+import { stunBlast } from '../attacks';
+import { noteBlockedHit } from '../dodge';
 import type { World } from '../World';
 
 const OUT_OF_BOUNDS = 60;
@@ -68,6 +70,7 @@ export const lobbed: ProjectileMotion<LobbedShot> = {
     p.y = p.sy + (p.ty - p.sy) * k;
     if (p.t < p.flight) return false;
     world.combat.explode(p.tx, p.ty, p.splash, p.splashDmg, p.team, p);
+    if (p.stun) stunBlast(world, p.tx, p.ty, p.stun, p.team);
     return true;
   },
 };
@@ -114,7 +117,10 @@ function randomHostileNear(world: World, p: FlyingShot, radius: number): Unit | 
   return candidates.length ? candidates[Math.floor(world.random.next() * candidates.length)]! : null;
 }
 
-/** The first hostile unit the shot's path from (ox, oy) touched this step. */
+/**
+ * The first hostile unit the shot's path from (ox, oy) touched this step. A shot passes through a
+ * unit that cannot be hit, which may count as the ace's close dodge.
+ */
 function firstHit(world: World, p: FlyingShot, ox: number, oy: number): Unit | null {
   const sx = p.x - ox;
   const sy = p.y - oy;
@@ -127,14 +133,19 @@ function firstHit(world: World, p: FlyingShot, ox: number, oy: number): Unit | n
     Math.max(ox, p.x) + HIT_SEARCH_PAD,
     Math.max(oy, p.y) + HIT_SEARCH_PAD,
     (u) => {
-      if (u.team === p.team || !canBeHit(u)) return;
+      if (u.team === p.team || !u.alive) return;
       if (p.hits && p.hits.includes(u.id)) return;
       const rad = u.size * 0.5 + p.r;
       let t = l2 ? ((u.x - ox) * sx + (u.y - oy) * sy) / l2 : 0;
       t = t < 0 ? 0 : t > 1 ? 1 : t;
       const dx = ox + sx * t - u.x;
       const dy = oy + sy * t - u.y;
-      if (dx * dx + dy * dy <= rad * rad && t < bestT) {
+      if (dx * dx + dy * dy > rad * rad) return;
+      if (!canBeHit(u)) {
+        noteBlockedHit(world, u);
+        return;
+      }
+      if (t < bestT) {
         bestT = t;
         best = u;
       }

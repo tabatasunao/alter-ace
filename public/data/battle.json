@@ -20,10 +20,12 @@
     "shotRangeFactor": 1.15,
     "auraBuffTime": 0.35,
     "separationGap": 2,
-    "edgeMargin": 10
+    "edgeMargin": 10,
+    "closeAim": { "range": 400, "lead": 1, "spread": 0.3, "fireRate": 2 },
+    "aceCharges": { "max": 2, "gap": 0.6, "retry": 0.5 }
   },
   "player": {
-    "size": 16,
+    "size": 22,
     "movement": {
       "model": "thruster",
       "thrustTime": 0.8,
@@ -37,7 +39,14 @@
     "dashDistance": 240,
     "dashDuration": 0.16,
     "dashIframes": 0.28,
-    "superRelease": { "duration": 3, "cooldown": 30, "openingBurst": 2.5 }
+    "superRelease": {
+      "duration": 3,
+      "openingBurst": 2.5,
+      "openingIframes": 0.6,
+      "damageTakenMul": 0.5,
+      "charge": { "perKill": 0.012, "closeRadius": 320, "closeKillMul": 2.5, "perSecond": 0.016 }
+    },
+    "dodge": { "dashRefund": 1, "releaseCharge": 0.15 }
   },
   "camera": {
     "minZoom": 0.3,
@@ -49,11 +58,39 @@
     "demoZoom": { "reference": 2600, "min": 0.32, "max": 0.75 }
   },
   "alerts": { "criticalHp": 0.25, "criticalReset": 0.5, "breakingAllies": 40 },
-  "ranks": [
-    { "letter": "S", "minShare": 0.6 },
-    { "letter": "A", "minShare": 0.45 },
-    { "letter": "B", "minShare": 0.3 },
-    { "letter": "C", "minShare": 0 }
-  ],
+  "impact": {
+    "freezeGap": 0.3,
+    "shakeTime": 0.4,
+    "flashTime": 0.18,
+    "hurtTime": 0.45,
+    "bigKill": { "freeze": 0.08, "shake": 7, "flash": 0.35 },
+    "aceHit": { "freeze": 0, "shake": 5, "flash": 0, "hurt": 0.7, "fullShare": 0.06, "react": 0.18 },
+    "heavyHit": { "freeze": 0.06, "shake": 10, "flash": 0.5, "danger": true, "hurt": 1, "minShare": 0.08 },
+    "release": { "freeze": 0.12, "shake": 14, "flash": 0.6 },
+    "dodge": { "freeze": 0.05, "shake": 0, "flash": 0.3 },
+    "slash": { "freeze": 0.05, "shake": 6, "flash": 0 },
+    "clash": { "freeze": 0.09, "shake": 9, "flash": 0.35 },
+    "aceDeath": { "freeze": 0.25, "shake": 18, "flash": 0.8, "danger": true, "hurt": 1, "slow": 1.2, "slowScale": 0.3 },
+    "blast": { "freeze": 0, "shake": 3, "flash": 0, "minRadius": 100, "range": 600 },
+    "beam": { "freeze": 0, "shake": 9, "flash": 0.2, "minWidth": 20, "range": 450 },
+    "stagger": { "minDamage": 60, "time": 0.07 }
+  },
+  "rating": {
+    "pointsPerEnemy": 10,
+    "parSecondsPerEnemy": 0.55,
+    "paceMin": 0.5,
+    "paceMax": 1.5,
+    "damagePerMaxHp": 0.08,
+    "integrityMin": 0.5,
+    "lineBonus": 0.3,
+    "ranks": [
+      { "letter": "S", "minScore": 10.5 },
+      { "letter": "A", "minScore": 8.5 },
+      { "letter": "B", "minScore": 6.5 },
+      { "letter": "C", "minScore": 0 }
+    ]
+  },
+  "clash": { "acePush": 420, "unitPush": 520, "pushTime": 0.25 },
+  "praise": { "killMilestone": 100, "streak": { "kills": 25, "window": 4, "cooldown": 15 }, "releaseMinKills": 10 },
   "timing": { "maxFrameDt": 0.05, "resultDelay": 1.6, "demoResetDelay": 2.5, "bannerDuration": 2.8 }
 }

@@ -14,7 +14,7 @@ A top-down 2D real-time mass battle game for the browser. The player flies one a
 | 1–4 | Select a weapon, or fire a tool |
 | Q / E, 5–0 | Cycle or select the aim mode |
 | Shift | Dash (brief invulnerability) |
-| Space | Super release: a burst from every weapon, then every weapon hardpoint fires for 3 s (30 s recharge) |
+| Space | Super release, when its gauge is full: a burst from every weapon, then every weapon fires and every tool runs its release effect for 3 s |
 | R | Reload |
 | + / − / mouse wheel | Zoom |
 | P / Esc | Pause |

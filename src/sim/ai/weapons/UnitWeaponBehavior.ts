@@ -19,5 +19,6 @@ export interface UnitFireContext<W extends UnitWeaponDef = UnitWeaponDef> {
  * implement this interface in behaviors/, and register it in registry.ts.
  */
 export interface UnitWeaponBehavior<W extends UnitWeaponDef = UnitWeaponDef> {
-  fire(ctx: UnitFireContext<W>): void;
+  /** Fires; returns false to hold fire (the caller retries after `ai.aceCharges.retry`). */
+  fire(ctx: UnitFireContext<W>): boolean | void;
 }

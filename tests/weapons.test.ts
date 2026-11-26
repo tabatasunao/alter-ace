@@ -110,7 +110,7 @@ describe('weapons', () => {
   });
 
   it('auto-fires, empties the magazine, reloads with the frame multiplier, then refills', () => {
-    const world = arena(catalog, { frame: 'quickdraw', slots: ['bazooka', 'repair', 'emp', 'decoy'] });
+    const world = arena(catalog, { frame: 'quickdraw', slots: ['beamRifle', 'repair', 'emp', 'decoy'] });
     const P = world.player!;
     const target = addSoldier(world, 'bulwark', ENEMY, P.x + 200, P.y);
     target.hp = target.maxHp = 1e9;

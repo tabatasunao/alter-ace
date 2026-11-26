@@ -5,6 +5,8 @@ const DEBRIS_DRAG = 0.94;
 
 /** Ages visual effects, drifts debris, and drops expired effects. */
 export class EffectSystem implements System {
+  readonly duringFreeze = true;
+
   update(world: World, dt: number): void {
     const fx = world.fx;
     let kept = 0;

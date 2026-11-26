@@ -22,6 +22,12 @@ export function statMul(P: Player, stat: StatusStat): number {
   return k;
 }
 
+/** How fast the ace is moving as a share of its top speed (Overboost included), 0–1. */
+export function speedFraction(P: Player): number {
+  const top = P.frame.speed * statMul(P, 'speed');
+  return top > 0 ? Math.min(1, Math.hypot(P.vx, P.vy) / top) : 0;
+}
+
 /** Whether a running status makes every weapon hardpoint fire at once (super release). */
 export function firesAllWeapons(P: Player): boolean {
   return P.statuses.some((s) => s.allWeapons);

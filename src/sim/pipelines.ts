@@ -10,11 +10,15 @@ import { DecoySystem } from './systems/DecoySystem';
 import { DemoDirectorSystem } from './systems/DemoDirectorSystem';
 import { EffectSystem } from './systems/EffectSystem';
 import { GridSystem } from './systems/GridSystem';
+import { HealSystem } from './systems/HealSystem';
+import { ImpactSystem } from './systems/ImpactSystem';
 import { PlayerMovementSystem } from './systems/PlayerMovementSystem';
 import { PlayerStatusSystem } from './systems/PlayerStatusSystem';
 import { PlayerWeaponSystem } from './systems/PlayerWeaponSystem';
+import { PraiseSystem } from './systems/PraiseSystem';
 import { ProjectileSystem } from './systems/ProjectileSystem';
 import { ReinforcementSystem } from './systems/ReinforcementSystem';
+import { ReleaseSystem } from './systems/ReleaseSystem';
 import { SeparationSystem } from './systems/SeparationSystem';
 import { ShieldSystem } from './systems/ShieldSystem';
 import { SoldierAISystem } from './systems/SoldierAISystem';
@@ -32,8 +36,10 @@ export function battlePipeline(input: MoveInput): Simulation {
     new SeparationSystem(),
     new CentroidSystem(),
     new AuraSystem(),
+    new HealSystem(),
     new ShieldSystem(),
     new PlayerStatusSystem(),
+    new ReleaseSystem(),
     new PlayerMovementSystem(input),
     new PlayerWeaponSystem(),
     new StalkSystem(),
@@ -42,9 +48,11 @@ export function battlePipeline(input: MoveInput): Simulation {
     new DecoySystem(),
     new ProjectileSystem(),
     new EffectSystem(),
+    new ImpactSystem(),
     new BattleClockSystem(),
     new ReinforcementSystem(),
     new AlertSystem(),
+    new PraiseSystem(),
     new VictorySystem(),
     new CleanupSystem(),
     new FollowCameraSystem(),
@@ -58,6 +66,7 @@ export function demoPipeline(): Simulation {
     new SeparationSystem(),
     new CentroidSystem(),
     new AuraSystem(),
+    new HealSystem(),
     new ShieldSystem(),
     new SoldierAISystem(),
     new UnitActionSystem(),

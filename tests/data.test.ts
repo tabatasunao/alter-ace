@@ -18,13 +18,13 @@ describe('game data', () => {
     expect(findMissingPainters(catalog)).toEqual([]);
   });
 
-  it('has the roster: 3 frames, 9 weapons, 4 tools, 6 aim modes, 13 unit classes with 13 unit weapons, 3 damage types', () => {
+  it('has the roster: 3 frames, 8 weapons, 4 tools, 6 aim modes, 14 unit classes with 14 unit weapons, 3 damage types', () => {
     expect(catalog.frames).toHaveLength(3);
-    expect(catalog.weapons).toHaveLength(9);
+    expect(catalog.weapons).toHaveLength(8);
     expect(catalog.tools).toHaveLength(4);
     expect(catalog.aimModes).toHaveLength(6);
-    expect(catalog.classes).toHaveLength(13);
-    expect(catalog.unitWeapons).toHaveLength(13);
+    expect(catalog.classes).toHaveLength(14);
+    expect(catalog.unitWeapons).toHaveLength(14);
     expect(catalog.damageTypes.map((t) => t.id)).toEqual(['kinetic', 'beam', 'blast']);
   });
 

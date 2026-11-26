@@ -1,12 +1,19 @@
 import type { RailWeapon } from '../../../data/types';
 import { lineStrike } from '../../attacks';
-import { aceHit } from '../../entities';
+import { aceHit, type Player } from '../../entities';
+import { speedFraction } from '../../statuses';
 import { burstAngle, type WeaponBehavior } from '../WeaponBehavior';
 
-/** Instant hit on every enemy along the line out to full range (Railgun). */
+/** Steady aim: the damage (and line width) multiplier for the ace's current speed. */
+export function steadyMul(w: RailWeapon, P: Player): number {
+  return w.steady ? w.steady.still + (w.steady.moving - w.steady.still) * speedFraction(P) : 1;
+}
+
+/** Instant hit on every enemy along the line out to full range, hardest from a standstill (Railgun). */
 export const rail: WeaponBehavior<RailWeapon> = {
   fire({ world, player: P, weapon: w, angle }) {
-    lineStrike(world, P, angle, { range: w.range, width: w.hitWidth, dmg: w.dmg, lineWidth: w.hitWidth }, aceHit(w), 'ace');
+    const k = steadyMul(w, P);
+    lineStrike(world, P, angle, { range: w.range, width: w.hitWidth, dmg: w.dmg * k, lineWidth: w.hitWidth * k }, aceHit(w), 'ace');
     return 1;
   },
   burst(ctx) {

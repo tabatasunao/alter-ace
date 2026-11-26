@@ -62,6 +62,7 @@ export function readPalette(root: Element = document.documentElement): Palette {
     ace: base.ace,
     accent: base.accent,
     tool: base.tool,
+    danger: base.danger,
   };
   const typeColors = new Map<string, string>();
   const shade = (alpha: number) => Object.fromEntries(Object.entries(tones).map(([t, c]) => [t, withAlpha(c, alpha)])) as Record<Tone, string>;

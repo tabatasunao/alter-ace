@@ -31,6 +31,37 @@ function interceptTime(x: number, y: number, target: Unit, speed: number): numbe
   return t > 0 ? t : straight;
 }
 
+/** Close-quarters fire settings (battle.json → ai.closeAim). */
+export interface CloseAim {
+  readonly range: number;
+  readonly lead: number;
+  readonly spread: number;
+  readonly fireRate: number;
+}
+
+/**
+ * How far inside close-quarters range a unit's target is: 0 at the edge or beyond, 1 at point
+ * blank. Only the ace counts as a close-quarters target.
+ */
+export function closeness(target: Unit, distance: number, c: CloseAim): number {
+  return target.kind === 'player' && c.range > 0 && distance < c.range ? 1 - distance / c.range : 0;
+}
+
+/** A weapon's lead at closeness `k`: rising linearly toward `closeAim.lead`, never below its own. */
+export function closeLead(lead: number, k: number, c: CloseAim): number {
+  return c.lead <= lead ? lead : lead + (c.lead - lead) * k;
+}
+
+/** A weapon's spread at closeness `k`: narrowing linearly toward × `closeAim.spread`. */
+export function closeSpread(spread: number, k: number, c: CloseAim): number {
+  return spread * (1 - (1 - c.spread) * k);
+}
+
+/** How many times as often a unit fires at closeness `k`: rising linearly toward `closeAim.fireRate`. */
+export function closeFireRate(k: number, c: CloseAim): number {
+  return 1 + (c.fireRate - 1) * k;
+}
+
 /** Angle to fire a projectile of `speed` from (x, y) at a moving target, `lead` of the way to the intercept point. */
 export function leadAngle(x: number, y: number, target: Unit, speed: number, lead: number): number {
   return aimAhead(x, y, target, interceptTime(x, y, target, speed), lead);

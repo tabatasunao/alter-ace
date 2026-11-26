@@ -22,7 +22,19 @@ export interface WorldLayer {
   draw(frame: WorldFrame): void;
 }
 
+export interface ScreenFrame {
+  readonly ctx: CanvasRenderingContext2D;
+  readonly world: World;
+  readonly palette: Palette;
+  readonly view: ViewBounds;
+  /** Canvas size in CSS pixels. */
+  readonly width: number;
+  readonly height: number;
+  /** 1 normally; lower when the viewer asked for reduced motion (scales shake and flashes). */
+  readonly motion: number;
+}
+
 /** Draws in screen coordinates (CSS pixels), over the world. */
 export interface ScreenLayer {
-  draw(ctx: CanvasRenderingContext2D, palette: Palette): void;
+  draw(frame: ScreenFrame): void;
 }

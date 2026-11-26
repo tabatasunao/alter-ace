@@ -2,17 +2,20 @@ import { describe, expect, it, vi } from 'vitest';
 import type { CommandSink } from '../src/input/commands';
 import { keyBindings } from '../src/input/commands';
 import { KeyboardInput } from '../src/input/KeyboardInput';
-import { ENEMY, type FlyingShot, type ToolSlot, type WeaponSlot } from '../src/sim/entities';
+import { aceHit, ENEMY, type FlyingShot, type ToolSlot, type WeaponSlot } from '../src/sim/entities';
 import { PlayerCommands } from '../src/sim/PlayerCommands';
 import { firesAllWeapons } from '../src/sim/statuses';
 import { PlayerStatusSystem } from '../src/sim/systems/PlayerStatusSystem';
 import { PlayerWeaponSystem } from '../src/sim/systems/PlayerWeaponSystem';
-import { addSoldier, arena, loadTestCatalog } from './helpers';
+import { ReleaseSystem } from '../src/sim/systems/ReleaseSystem';
+import type { World } from '../src/sim/World';
+import { addSoldier, ARMY_HIT, arena, loadTestCatalog } from './helpers';
 
 describe('super release', () => {
   const catalog = loadTestCatalog();
-  const { duration, cooldown } = catalog.battle.player.superRelease;
-  const loadout = { slots: ['rifle', 'missile', 'bazooka', 'repair'] };
+  const sr = catalog.battle.player.superRelease;
+  const { duration } = sr;
+  const loadout = { slots: ['rifle', 'missile', 'breach', 'repair'] };
 
   function setup() {
     const world = arena(catalog, loadout);
@@ -32,7 +35,7 @@ describe('super release', () => {
     expect(after.slice(1)).toEqual(before.slice(1));
   });
 
-  it('fires every weapon hardpoint at once while it runs, but not tools', () => {
+  it('fires every weapon hardpoint at once while it runs; tools run their release effect without using a charge', () => {
     const { world, P, commands } = setup();
     commands.superRelease();
     expect(firesAllWeapons(P)).toBe(true);
@@ -40,8 +43,8 @@ describe('super release', () => {
     new PlayerWeaponSystem().update(world, 1 / 60);
     const after = ammo(P);
     for (const i of [0, 1, 2]) expect(after[i], `slot ${i}`).toBeLessThan(before[i] as number);
-    expect((P.slots[3] as ToolSlot).cd).toBe(0); // the repair tool was not used
-    expect(P.statuses).toHaveLength(1);
+    expect((P.slots[3] as ToolSlot).cd).toBe(0); // the repair tool was not used up
+    expect(P.statuses.map((s) => s.id)).toEqual(['superRelease', 'repair:release']);
   });
 
   it('opens with a fireworks burst from every weapon, even with no enemy around, using no ammo', () => {
@@ -58,7 +61,8 @@ describe('super release', () => {
     const shots = world.shots as FlyingShot[];
     expect(shots.filter((s) => s.wid === 'rifle')).toHaveLength(expected('rifle'));
     expect(shots.filter((s) => s.wid === 'missile')).toHaveLength(expected('missile', salvo));
-    expect(shots.filter((s) => s.wid === 'bazooka')).toHaveLength(expected('bazooka'));
+    const pellets = (catalog.armament('breach') as { pellets: number }).pellets;
+    expect(shots.filter((s) => s.wid === 'breach')).toHaveLength(expected('breach', pellets));
     // A wild spray: rounds head every way, at varied speeds, not in a tidy ring.
     const speeds = new Set(shots.filter((s) => s.wid === 'rifle').map((s) => Math.round(Math.hypot(s.vx, s.vy))));
     expect(speeds.size).toBeGreaterThan(5);
@@ -117,18 +121,64 @@ describe('super release', () => {
     expect(behind.hp).toBe(behind.maxHp); // nothing went backwards
   });
 
-  it('lasts its duration, then recharges for its cooldown', () => {
-    const { world, P, commands } = setup();
+  /** Runs the ace's status and release systems for `seconds`. */
+  function tick(world: World, seconds: number): void {
     const status = new PlayerStatusSystem();
+    const release = new ReleaseSystem();
+    for (let i = 0; i < Math.round(seconds * 60); i++) {
+      status.update(world, 1 / 60);
+      release.update(world, 1 / 60);
+    }
+  }
+
+  it('starts full, empties when used, lasts its duration, then needs a full gauge again', () => {
+    const { world, P, commands } = setup();
+    expect(P.releaseCharge).toBe(1);
     commands.superRelease();
-    expect(P.releaseCd).toBe(cooldown);
-    for (let i = 0; i < Math.round((duration + 0.25) * 60); i++) status.update(world, 1 / 60);
+    expect(P.releaseCharge).toBe(0);
+    expect(P.release).not.toBeNull();
+    tick(world, duration + 0.25);
     expect(firesAllWeapons(P)).toBe(false);
+    expect(P.release).toBeNull();
     commands.superRelease();
-    expect(firesAllWeapons(P)).toBe(false); // still recharging
-    for (let i = 0; i < Math.round((cooldown - duration) * 60); i++) status.update(world, 1 / 60);
+    expect(firesAllWeapons(P)).toBe(false); // the gauge is not full
+    tick(world, 1 / sr.charge.perSecond - 0.25);
+    expect(P.releaseCharge).toBeCloseTo(1, 1);
+    tick(world, 0.5);
     commands.superRelease();
     expect(firesAllWeapons(P)).toBe(true);
+  });
+
+  it('charges from the ace kills, close ones more, and not while a release runs', () => {
+    const { world, P, commands } = setup();
+    const c = sr.charge;
+    const hit = aceHit(catalog.armament('rifle') as { id: string; damageType: string });
+    P.releaseCharge = 0;
+    world.combat.kill(addSoldier(world, 'trooper', ENEMY, P.x + c.closeRadius + 100, P.y), hit);
+    expect(P.releaseCharge).toBeCloseTo(c.perKill);
+    world.combat.kill(addSoldier(world, 'trooper', ENEMY, P.x + 50, P.y), hit);
+    expect(P.releaseCharge).toBeCloseTo(c.perKill * (1 + c.closeKillMul));
+    world.combat.kill(addSoldier(world, 'trooper', ENEMY, P.x + 60, P.y), ARMY_HIT);
+    expect(P.releaseCharge).toBeCloseTo(c.perKill * (1 + c.closeKillMul)); // not the ace's kill
+
+    P.releaseCharge = 1;
+    commands.superRelease();
+    world.combat.kill(addSoldier(world, 'trooper', ENEMY, P.x + 50, P.y), hit);
+    expect(P.releaseCharge).toBe(0);
+  });
+
+  it('opens with invulnerability, cuts damage taken while it runs, and readies the dash', () => {
+    const { world, P, commands } = setup();
+    P.dashCd = 2;
+    commands.superRelease();
+    expect(P.iframes).toBe(sr.openingIframes);
+    expect(P.dashCd).toBe(0);
+    const hp = P.hp;
+    world.combat.damage(P, 10, ARMY_HIT);
+    expect(P.hp).toBe(hp); // invulnerable
+    P.iframes = 0;
+    world.combat.damage(P, 10, ARMY_HIT);
+    expect(hp - P.hp).toBeCloseTo(10 * catalog.battle.balance.aceDamageTaken * sr.damageTakenMul);
   });
 
   it('is on Space, and dash is on Shift', () => {

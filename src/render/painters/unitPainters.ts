@@ -130,6 +130,17 @@ const chevron: UnitPainter = {
 };
 
 /** A square outline, the beam-armed sibling of the filled Trooper square (Beam Trooper). */
+/** A plus sign (Healer). */
+const cross: UnitPainter = {
+  paint(ctx, u, color) {
+    const h = u.size / 2;
+    const t = u.size / 6;
+    ctx.fillStyle = color;
+    ctx.fillRect(u.x - h, u.y - t, u.size, t * 2);
+    ctx.fillRect(u.x - t, u.y - h, t * 2, u.size);
+  },
+};
+
 const frame: UnitPainter = {
   paint(ctx, u, color) {
     const s = u.size;
@@ -243,6 +254,7 @@ const blade: UnitPainter = {
 export const UNIT_PAINTERS: Readonly<Record<string, UnitPainter>> = {
   square,
   frame,
+  cross,
   diamond,
   hollow,
   barrel,

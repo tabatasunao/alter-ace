@@ -1,7 +1,8 @@
 import { clamp } from '../../../../core/math';
 import type { SaberUnitWeapon } from '../../../../data/types';
 import { arcSlash } from '../../../attacks';
-import { armyHit, unitTone, type Soldier, type UnitAction } from '../../../entities';
+import { clash, holdsBlade } from '../../../clash';
+import { armyHit, unitTone, type Soldier, type Unit, type UnitAction } from '../../../entities';
 import type { World } from '../../../World';
 import type { UnitWeaponBehavior } from '../UnitWeaponBehavior';
 
@@ -14,10 +15,14 @@ export const saber: UnitWeaponBehavior<SaberUnitWeapon> = {
   },
 };
 
-/** A straight dash that ends in the slash. The unit's AI waits while it runs. */
+/**
+ * A straight dash that ends in the slash. The unit's AI waits while it runs. The ace, if it has its
+ * own saber out, clashes with the slash instead of taking it.
+ */
 class SaberLunge implements UnitAction {
   readonly holdsAI = true;
   readonly sightLine = null;
+  readonly blade = true;
   private remaining: number;
   private readonly vx: number;
   private readonly vy: number;
@@ -45,7 +50,12 @@ class SaberLunge implements UnitAction {
     u.y = clamp(u.y + this.vy * dt, margin, world.height - margin);
     if (this.remaining > 0) return false;
     u.vx = u.vy = 0;
-    arcSlash(world, u, this.angle, { reach: w.slash, half: w.arcHalfAngle, closeRange: w.closeRange, dmg: w.dmg }, armyHit(u, w), unitTone(u));
+    const parry = (t: Unit) => {
+      if (t.kind !== 'player' || !holdsBlade(t)) return false;
+      clash(world, t, u);
+      return true;
+    };
+    arcSlash(world, u, this.angle, { reach: w.slash, half: w.arcHalfAngle, closeRange: w.closeRange, dmg: w.dmg }, armyHit(u, w), unitTone(u), parry);
     return true;
   }
 }

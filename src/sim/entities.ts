@@ -1,5 +1,5 @@
 import type { Point } from '../core/math';
-import type { FrameDef, ToolDef, UnitClassDef, UnitWeaponDef, WeaponDef } from '../data/types';
+import type { FrameDef, StunSpec, ToolDef, UnitClassDef, UnitWeaponDef, WeaponDef } from '../data/types';
 
 export type Team = 0 | 1;
 export const ALLY: Team = 0;
@@ -46,6 +46,8 @@ export interface SightLine {
   /** Frozen just before it fires: the cue to dodge. */
   readonly locked: boolean;
   readonly target: Unit;
+  /** Distance from the line within which the attack hits. */
+  readonly width: number;
 }
 
 /**
@@ -57,6 +59,8 @@ export interface UnitAction {
   readonly holdsAI: boolean;
   /** The aim line to draw while it runs, if it has one. */
   readonly sightLine: SightLine | null;
+  /** A saber swing in progress: a saber that meets it clashes instead of cutting (src/sim/clash.ts). */
+  readonly blade?: boolean;
   /** Advances one step; returns true when the action is finished. */
   step(dt: number): boolean;
 }
@@ -91,6 +95,13 @@ export interface Soldier extends UnitBase {
   stalking: boolean;
   /** The stalking semi-ace whose pack this unit joined: it keeps near it. Null when not in a pack. */
   leader: Soldier | null;
+  /** Time until the next heal pulse (classes with `heal`). */
+  healT: number;
+  /** Judder time left after a heavy hit from the ace (visual only). */
+  stagger: number;
+  /** Time left exposed (after a Plasma Mortar stun): hits from the ace's side deal × `exposedMul`. */
+  exposedT: number;
+  exposedMul: number;
 }
 
 /** The ace's Decoy Beacon: a stationary allied unit that pulls enemy fire. */
@@ -109,6 +120,10 @@ export interface WeaponSlot {
   reloadTotal: number;
   /** Time until the next shot. */
   cd: number;
+  /** Spin-up, 0–1 (weapons with `spin`). */
+  spin: number;
+  /** Seconds since this hardpoint last fired. */
+  sinceShot: number;
 }
 
 export interface ToolSlot {
@@ -151,6 +166,15 @@ export interface Status {
   readonly allWeapons?: boolean;
 }
 
+/** A super release in progress (see src/sim/release.ts). */
+export interface ReleaseRun {
+  /** Seconds since it started. */
+  elapsed: number;
+  readonly duration: number;
+  /** The ace's kill count when it started. */
+  readonly killsAtStart: number;
+}
+
 /** The ace. */
 export interface Player extends UnitBase {
   readonly kind: 'player';
@@ -161,8 +185,15 @@ export interface Player extends UnitBase {
   facing: number;
   iframes: number;
   dashCd: number;
-  /** Time until super release can be used again. */
-  releaseCd: number;
+  /** True from a dash until its invulnerability ends or a close dodge pays out (once per dash). */
+  dodgeArmed: boolean;
+  /** Time left of the jolt after a hit (drawn by PlayerLayer), and its strength (0–1). */
+  hurtT: number;
+  hurtK: number;
+  /** Super release gauge, 0–1. Release needs it full. */
+  releaseCharge: number;
+  /** The running super release, if any. */
+  release: ReleaseRun | null;
   dash: Motion | null;
   lunge: Lunge | null;
   /** Timed effects from tools, in the order they were applied. */
@@ -219,6 +250,8 @@ export interface FlyingShot extends ProjectileBase {
 /** A lobbed shell that lands at a fixed point after a fixed time. `x`, `y` follow its ground point. */
 export interface LobbedShot extends ProjectileBase {
   readonly kind: 'mortar';
+  /** A stun where it lands, after the blast. */
+  readonly stun?: StunSpec;
   readonly sx: number;
   readonly sy: number;
   readonly tx: number;
@@ -235,7 +268,7 @@ export type ShotOfKind<K extends ProjectileKind> = K extends LobbedShot['kind'] 
 // ---------- Visual effects ----------
 
 /** Semantic color; the renderer maps it to the palette. `semiAce` is the enemy semi-aces' color. */
-export type Tone = 'ally' | 'enemy' | 'semiAce' | 'ace' | 'accent' | 'tool';
+export type Tone = 'ally' | 'enemy' | 'semiAce' | 'ace' | 'accent' | 'tool' | 'danger';
 
 interface EffectBase {
   x: number;
@@ -273,6 +306,16 @@ export interface RailEffect extends EffectBase {
   readonly width: number;
 }
 
+/** A heavy beam's discharge (the mega-beam): a white-hot core in layers of glow, with a muzzle flare. */
+export interface HeavyBeamEffect extends EffectBase {
+  readonly type: 'heavyBeam';
+  readonly x2: number;
+  readonly y2: number;
+  readonly tone: Tone;
+  /** Core width at full strength. */
+  readonly width: number;
+}
+
 export interface SlashEffect extends EffectBase {
   readonly type: 'slash';
   readonly a: number;
@@ -287,12 +330,40 @@ export interface EmpEffect extends EffectBase {
   readonly r: number;
 }
 
+export interface PulseEffect extends EffectBase {
+  readonly type: 'pulse';
+  readonly r: number;
+  readonly tone: Tone;
+}
+
 export interface GhostEffect extends EffectBase {
   readonly type: 'ghost';
 }
 
+/** The first instant of a big blast: a bright disc ringed in dark, so it reads on any background. */
+export interface FlareEffect extends EffectBase {
+  readonly type: 'flare';
+  readonly r: number;
+  readonly tone: Tone;
+}
+
+/** Smoke that takes over from a big blast's fire and drifts out. */
+export interface SmokeEffect extends EffectBase {
+  readonly type: 'smoke';
+  readonly r: number;
+}
+
+/** A short word over a spot (DODGE, a release's kill count). */
+export interface CalloutEffect extends EffectBase {
+  readonly type: 'callout';
+  readonly text: string;
+  readonly tone: Tone;
+  /** Font size in world units (like hit labels). */
+  readonly size: number;
+}
+
 /** What one of the ace's hits did against a unit's defenses. */
-export type HitResult = 'critical' | 'resisted' | 'shielded';
+export type HitResult = 'critical' | 'resisted' | 'shielded' | 'exposed';
 
 /** Marks an ace hit that armor made stronger (critical) or weaker (resisted), or a shield absorbed. */
 export interface HitMarkerEffect extends EffectBase {
@@ -309,9 +380,14 @@ export type Effect =
   | DebrisEffect
   | SparkEffect
   | RailEffect
+  | HeavyBeamEffect
   | SlashEffect
   | EmpEffect
+  | PulseEffect
   | GhostEffect
+  | FlareEffect
+  | SmokeEffect
+  | CalloutEffect
   | HitMarkerEffect;
 export type EffectType = Effect['type'];
 

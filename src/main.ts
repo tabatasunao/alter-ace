@@ -1,12 +1,14 @@
 import { App } from './app/App';
 import type { Catalog } from './data/catalog';
 import { loadCatalog, onDataFileChanged } from './data/load';
+import { LocalStorageCareerStore } from './game/career';
 import { LocalStorageLoadoutStore } from './game/loadoutStore';
 import { findMissingPainters } from './render/registryCheck';
 import { findMissingSimImplementations } from './sim/registryCheck';
 import './style.css';
 
 const LOADOUT_KEY = 'alter-ace-loadout';
+const CAREER_KEY = 'alter-ace-career';
 
 /** Loads and checks data, including that every behavior/effect/strategy/shape it names exists in code. */
 async function loadCheckedCatalog(): Promise<Catalog> {
@@ -25,6 +27,7 @@ async function boot(): Promise<void> {
   const app = new App({
     catalog: await loadCheckedCatalog(),
     store: new LocalStorageLoadoutStore(LOADOUT_KEY),
+    career: new LocalStorageCareerStore(CAREER_KEY),
     seed: seedFromUrl(),
   });
   app.start();

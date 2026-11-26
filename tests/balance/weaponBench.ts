@@ -23,6 +23,8 @@ const DT = 1 / 60;
 const GHOST = 1e-6;
 const ACE_START = { x: 2200, y: 1700 };
 const ENEMY_DISTANCE = 750;
+/** Share of the formation's total HP that ends the measurement window. */
+const MEASURE_SHARE = 0.9;
 
 export interface BenchOptions {
   weapon: string;
@@ -37,10 +39,10 @@ export interface BenchResult {
   weapon: string;
   /** Seconds to destroy every enemy, or null if time ran out. */
   clearTime: number | null;
-  /** Enemy hit points destroyed per second (overkill not counted). */
+  /** Enemy hit points destroyed per second, net of healing (overkill not counted), until 90% are gone. */
   hpPerSecond: number;
   kills: number;
-  /** Raw damage the ace would have taken per minute: how exposed the weapon keeps you. */
+  /** Raw damage the ace would have taken per minute over the same window: how exposed the weapon keeps you. */
   incomingPerMin: number;
 }
 
@@ -78,18 +80,26 @@ export function runBench(catalog: Catalog, o: BenchOptions): BenchResult {
   const range = 'range' in weapon ? weapon.range : 300;
   const sim = battlePipeline(botPilot(world, P, weapon.id === 'saber' || range < 200 ? 0 : range * 0.8));
 
+  const destroyed = () => totalHp - enemies.reduce((sum, u) => sum + (u.alive ? Math.max(0, u.hp) : 0), 0);
+  // Rates are measured until MEASURE_SHARE of the formation's HP is gone, so a last straggler the
+  // bot pilot fails to chase down does not skew a weapon's damage output.
+  let window: { t: number; destroyed: number; taken: number } | null = null;
   let t = 0;
   while (!world.status.over && t < maxTime) {
     sim.step(world, DT);
     t += DT;
+    if (!window) {
+      const gone = destroyed();
+      if (gone >= totalHp * MEASURE_SHARE) window = { t, destroyed: gone, taken: world.stats.dmgTaken };
+    }
   }
-  const remaining = enemies.reduce((sum, u) => sum + (u.alive ? Math.max(0, u.hp) : 0), 0);
+  const w = window ?? { t, destroyed: destroyed(), taken: world.stats.dmgTaken };
   return {
     weapon: o.weapon,
     clearTime: world.status.over ? t : null,
-    hpPerSecond: (totalHp - remaining) / t,
+    hpPerSecond: w.destroyed / w.t,
     kills: world.stats.kills,
-    incomingPerMin: (world.stats.dmgTaken / GHOST / t) * 60,
+    incomingPerMin: (w.taken / GHOST / w.t) * 60,
   };
 }
 

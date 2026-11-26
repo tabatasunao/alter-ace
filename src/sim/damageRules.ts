@@ -1,4 +1,5 @@
 import type { Hit, HitResult, Player, Soldier, Unit } from './entities';
+import { kick } from './impact';
 import { statMul } from './statuses';
 import type { World } from './World';
 
@@ -17,6 +18,29 @@ const aceScale: DamageRule<Player> = (u, amount, _hit, world) =>
 const recordAceHit: DamageRule<Player> = (u, amount, _hit, world) => {
   world.stats.dmgTaken += amount;
   u.lastHit = world.t;
+  return amount;
+};
+
+/**
+ * Every hit that lands on the ace: the ace jolts, a red ring pops off it, the screen edges redden
+ * and the view shakes, all scaled by the damage (full at `fullShare` of max HP).
+ */
+const aceHitReaction: DamageRule<Player> = (u, amount, _hit, world) => {
+  const h = world.catalog.battle.impact.aceHit;
+  const k = Math.min(1, amount / (u.maxHp * h.fullShare));
+  if (k <= 0) return amount;
+  kick(world, h, k);
+  const fresh = u.hurtT < h.react * 0.5;
+  u.hurtK = fresh ? k : Math.max(k, u.hurtK);
+  u.hurtT = h.react;
+  if (fresh) world.addFx({ type: 'pulse', x: u.x, y: u.y, r: 24 + 22 * k, t: 0, life: 0.22, tone: 'danger' });
+  return amount;
+};
+
+/** A hit that takes a big share of the ace's HP lands with hit-stop, shake and a danger flash. Runs last. */
+const heavyHitImpact: DamageRule<Player> = (u, amount, _hit, world) => {
+  const h = world.catalog.battle.impact.heavyHit;
+  if (amount >= u.maxHp * h.minShare) kick(world, h);
   return amount;
 };
 
@@ -65,11 +89,25 @@ const armor: DamageRule<Soldier> = (u, amount, hit, world) => {
   return amount * m;
 };
 
+/** An exposed unit (stunned by a Plasma Mortar) takes × `exposedMul` from the ace's side, marked EXPOSED on the ace's hits. */
+const exposed: DamageRule<Soldier> = (u, amount, hit, world) => {
+  if (u.exposedT <= 0) return amount;
+  markAceHit(world, u, hit, 'exposed');
+  return amount * u.exposedMul;
+};
+
+/** A heavy hit from the ace makes the unit judder for a moment (drawn by UnitLayer). Runs last. */
+const stagger: DamageRule<Soldier> = (u, amount, hit, world) => {
+  const s = world.catalog.battle.impact.stagger;
+  if (hit.src === 'player' && amount >= s.minDamage) u.stagger = s.time;
+  return amount;
+};
+
 type RuleTable = { readonly [K in Unit['kind']]: readonly DamageRule<Extract<Unit, { kind: K }>>[] };
 
 /** The damage rules each kind of unit runs, in order. */
 export const DAMAGE_RULES: RuleTable = {
-  player: [aceScale, recordAceHit],
-  soldier: [shield, armySoftening, aceVulnerability, armor],
+  player: [aceScale, recordAceHit, aceHitReaction, heavyHitImpact],
+  soldier: [shield, armySoftening, aceVulnerability, armor, exposed, stagger],
   decoy: [armySoftening],
 };

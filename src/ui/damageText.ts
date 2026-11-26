@@ -32,17 +32,21 @@ export function matchupLine(catalog: Catalog, typeId: string): string {
   return parts.join(' · ');
 }
 
-/** "Assault rifle (Kinetic)" for the unit legend: the class's weapon and its damage type. */
+/** "Assault rifle (Kinetic)" for the unit legend: the class's weapon and its damage type, plus its enemy-army weapon if it has one. */
 export function unitWeaponLine(catalog: Catalog, cls: UnitClassDef): string {
-  const w = catalog.unitWeapon(cls.weapon);
-  return `${w.name} (${damageTypeBadge(catalog, w.damageType)})`;
+  const line = (id: string) => {
+    const w = catalog.unitWeapon(id);
+    return `${w.name} (${damageTypeBadge(catalog, w.damageType)})`;
+  };
+  return cls.enemyWeapon ? `${line(cls.weapon)}; enemy: ${line(cls.enemyWeapon)}` : line(cls.weapon);
 }
 
-/** Extra legend lines for a class's special traits: a semi-ace shield, extra damage from aces. */
+/** Extra legend lines for a class's special traits: a semi-ace shield, extra damage from aces, a heal pulse. */
 export function unitTraitLines(cls: UnitClassDef): string[] {
   const lines: string[] = [];
   if (cls.shield) lines.push(`Shield: invulnerable ${cls.shield.duration} s when hit, recharges ${cls.shield.cooldown} s`);
   if (cls.aceHitMul) lines.push(`Takes ${cls.aceHitMul}× damage from aces and semi-aces`);
+  if (cls.heal) lines.push(`Heals its army within ${cls.heal.radius} by ${Math.round(cls.heal.amount * 100)}% every ${cls.heal.interval} s (allied: the ace too)`);
   return lines;
 }
 

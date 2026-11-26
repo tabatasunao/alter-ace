@@ -9,7 +9,7 @@
       "dmg": 5,
       "range": 320,
       "interval": 1.1,
-      "speed": 380,
+      "speed": 399,
       "spread": 0.1,
       "lead": 0.15
     },
@@ -22,7 +22,7 @@
       "dmg": 4,
       "range": 380,
       "interval": 1.6,
-      "speed": 900,
+      "speed": 945,
       "spread": 0.06,
       "lead": 0.2
     },
@@ -35,7 +35,7 @@
       "dmg": 4,
       "range": 270,
       "interval": 0.75,
-      "speed": 900,
+      "speed": 945,
       "spread": 0.08,
       "lead": 0.25
     },
@@ -49,7 +49,7 @@
       "dmg": 13,
       "range": 300,
       "interval": 1.7,
-      "speed": 340,
+      "speed": 357,
       "spread": 0.05,
       "lead": 0.15
     },
@@ -65,7 +65,7 @@
       "splashDmg": 9,
       "range": 600,
       "interval": 2.6,
-      "speed": 380,
+      "speed": 399,
       "spread": 0.04,
       "lead": 0.2
     },
@@ -93,13 +93,13 @@
       "salvo": 2,
       "range": 720,
       "interval": 9,
-      "speed": 330,
-      "launchSpeed": 140,
+      "speed": 346,
+      "launchSpeed": 147,
       "life": 2.8,
       "fanAngle": 0.7,
       "radius": 3,
       "turnRate": 1.5,
-      "acceleration": 520,
+      "acceleration": 546,
       "retargetRadius": 150
     },
     {
@@ -112,7 +112,7 @@
       "dmg": 10,
       "range": 460,
       "interval": 2.6,
-      "speed": 850,
+      "speed": 892,
       "spread": 0.03,
       "lead": 0.25
     },
@@ -126,7 +126,7 @@
       "pellets": 4,
       "range": 200,
       "interval": 0.9,
-      "speed": 450,
+      "speed": 472,
       "spread": 0.22,
       "lead": 0
     },
@@ -139,7 +139,7 @@
       "dmg": 5,
       "range": 460,
       "interval": 0.4,
-      "speed": 950,
+      "speed": 998,
       "spread": 0.14,
       "lead": 0.25
     },
@@ -152,9 +152,9 @@
       "radius": 4.2,
       "pierce": 2,
       "dmg": 18,
-      "range": 760,
+      "range": 798,
       "interval": 3,
-      "speed": 1500,
+      "speed": 1575,
       "spread": 0.02,
       "lead": 0.35
     },
@@ -169,15 +169,15 @@
       "salvo": 16,
       "range": 650,
       "interval": 7,
-      "speed": 400,
-      "launchSpeed": 110,
+      "speed": 440,
+      "launchSpeed": 121,
       "life": 3.4,
       "fanAngle": 3.2,
       "launchAngle": 3.14159,
       "homingDelay": 0.2,
       "radius": 2.5,
       "turnRate": 3.2,
-      "acceleration": 650,
+      "acceleration": 715,
       "retargetRadius": 160,
       "weave": { "amplitude": 0.9, "frequency": 1.4 }
     },
@@ -195,6 +195,20 @@
       "lungeSpeed": 900,
       "maxLunge": 0.22,
       "stopDistance": 18
+    },
+    {
+      "id": "megaBeam",
+      "name": "Mega-beam",
+      "behavior": "lance",
+      "look": "heavyBeam",
+      "damageType": "beam",
+      "dmg": 100,
+      "range": 900,
+      "interval": 10,
+      "charge": 1.5,
+      "lock": 0.45,
+      "width": 28,
+      "lead": 0.6
     }
   ]
 }

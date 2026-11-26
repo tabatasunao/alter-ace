@@ -11,7 +11,11 @@ export interface Loadout {
 
 export type LoadoutCheck = { ok: true } | { ok: false; message: string };
 
-/** Coerces anything (e.g. stale saved data) into a loadout the current catalog accepts. */
+/**
+ * Coerces anything (e.g. stale saved data) into a loadout the current catalog accepts: unknown
+ * frames, aim modes and sizes fall back to the defaults; duplicate and non-string slots are dropped;
+ * a slot naming a weapon or tool that no longer exists is refilled from the default loadout.
+ */
 export function sanitizeLoadout(raw: unknown, catalog: Catalog): Loadout {
   const def = catalog.loadout.defaultLoadout;
   const out: Loadout = { frame: def.frame, slots: [...def.slots], aim: def.aim, enemies: def.enemies };
@@ -19,8 +23,11 @@ export function sanitizeLoadout(raw: unknown, catalog: Catalog): Loadout {
   const r = raw as Partial<Record<keyof Loadout, unknown>>;
   if (typeof r.frame === 'string' && catalog.frames.some((f) => f.id === r.frame)) out.frame = r.frame;
   if (Array.isArray(r.slots)) {
-    const valid = r.slots.filter((id): id is string => typeof id === 'string' && catalog.hasArmament(id));
-    out.slots = [...new Set(valid)].slice(0, catalog.loadout.slots);
+    const valid = [...new Set(r.slots.filter((id): id is string => typeof id === 'string' && catalog.hasArmament(id)))];
+    // A weapon or tool that no longer exists gives its hardpoint to the default loadout's next unused item.
+    const retired = r.slots.filter((id) => typeof id === 'string' && !catalog.hasArmament(id)).length;
+    const fill = def.slots.filter((id) => !valid.includes(id)).slice(0, retired);
+    out.slots = [...valid, ...fill].slice(0, catalog.loadout.slots);
   }
   if (typeof r.aim === 'string' && catalog.aimModes.some((m) => m.id === r.aim)) out.aim = r.aim;
   if (typeof r.enemies === 'number' && Number.isFinite(r.enemies)) out.enemies = snapEnemyCount(r.enemies, catalog);

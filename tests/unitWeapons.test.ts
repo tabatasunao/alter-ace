@@ -143,10 +143,28 @@ describe('unit weapons (AI armies)', () => {
     expect(lancer.vx).toBeGreaterThan(0); // moving east, away from the target
   });
 
-  it('every class deploys with its one weapon', () => {
+  it('every class deploys with its one weapon; enemy units use the enemy weapon where the class has one', () => {
     const world = new World(catalog, new SeededRandom(1), 'battle');
     for (const c of catalog.classes) {
-      expect(world.factory.soldier(c, ENEMY, 0, 0).weapon).toBe(catalog.unitWeapon(c.weapon));
+      expect(world.factory.soldier(c, ALLY, 0, 0).weapon).toBe(catalog.unitWeapon(c.weapon));
+      expect(world.factory.soldier(c, ENEMY, 0, 0).weapon).toBe(catalog.unitWeapon(c.enemyWeapon ?? c.weapon));
     }
+    expect(catalog.unitClass('commander').enemyWeapon).toBe('megaBeam');
+  });
+
+  it('the mega-beam hits units well beside its line that a Beam lance misses', () => {
+    const hitBeside = (weaponId: string) => {
+      const world = arena(catalog);
+      const u = addSoldier(world, 'lancer', ENEMY, 3000, 1000, weaponId);
+      const target = addSoldier(world, 'bulwark', ALLY, 2600, 1000);
+      const beside = addSoldier(world, 'bulwark', ALLY, 2500, 1020);
+      for (const t of [target, beside]) t.hp = t.maxHp = 1000;
+      fire(world, u, target);
+      const charges = new UnitActionSystem();
+      for (let i = 0; i < 180 && u.action; i++) charges.update(world, 1 / 60);
+      return beside.hp < 1000;
+    };
+    expect(hitBeside('megaBeam')).toBe(true);
+    expect(hitBeside('beamLance')).toBe(false);
   });
 });

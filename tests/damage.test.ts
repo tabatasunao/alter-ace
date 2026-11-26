@@ -64,7 +64,7 @@ describe('damage types and armor', () => {
     const reactive = addSoldier(world, 'breacher', ENEMY, 3000, 1000);
     plated.hp = plated.maxHp = reactive.hp = reactive.maxHp = 1000;
     // Both sit at the blast center, so each takes the full 100 before armor.
-    world.combat.explode(3000, 1000, 50, 100, 0, aceHit(catalog, 'bazooka'));
+    world.combat.explode(3000, 1000, 50, 100, 0, aceHit(catalog, 'mortar'));
     expect(1000 - plated.hp).toBe(100); // blast vs heavy plate: normal
     expect(1000 - reactive.hp).toBe(50); // blast vs reactive armor: halved
   });

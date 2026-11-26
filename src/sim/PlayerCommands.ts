@@ -1,15 +1,22 @@
 import { clamp } from '../core/math';
-import { addStatus } from './statuses';
-import { burstAll, startReload } from './weapons/firing';
+import { startRelease } from './release';
+import { startReload } from './weapons/firing';
 import { useTool } from './tools/useTool';
 import type { World } from './World';
 
 /**
  * Everything the player can order the ace to do. Input devices and HUD buttons call these;
  * they don't touch world state themselves.
+ *
+ * Commands arrive between steps, after CleanupSystem has compacted `world.units`, so the spatial
+ * grid's index lists are stale. Commands that query the grid (tools, super release) rebuild it first.
  */
 export class PlayerCommands {
   constructor(private readonly world: World) {}
+
+  private syncGrid(): void {
+    this.world.grid.rebuild(this.world.units);
+  }
 
   get canAct(): boolean {
     const w = this.world;
@@ -23,6 +30,7 @@ export class PlayerCommands {
     const slot = P.slots[index];
     if (!slot) return;
     if (slot.kind === 'tool') {
+      this.syncGrid();
       useTool(this.world, P, index);
       return;
     }
@@ -56,19 +64,16 @@ export class PlayerCommands {
     const m = Math.hypot(dx, dy) || 1;
     const speed = cfg.dashDistance / cfg.dashDuration;
     P.dash = { remaining: cfg.dashDuration, vx: (dx / m) * speed, vy: (dy / m) * speed };
-    P.iframes = cfg.dashIframes;
+    P.iframes = Math.max(P.iframes, cfg.dashIframes);
+    P.dodgeArmed = true;
     P.dashCd = P.frame.dashCd;
   }
 
-  /** Super release: a fireworks burst from every weapon, then every hardpoint fires at once for a few seconds. */
+  /** Super release, if the gauge is full (src/sim/release.ts). */
   superRelease(): void {
     if (!this.canAct) return;
-    const P = this.world.player!;
-    if (P.releaseCd > 0) return;
-    const { duration, cooldown, openingBurst } = this.world.catalog.battle.player.superRelease;
-    burstAll(this.world, P, openingBurst);
-    addStatus(P, { id: 'superRelease', label: 'Super release', remaining: duration, mods: {}, heal: 0, ring: true, allWeapons: true });
-    P.releaseCd = cooldown;
+    this.syncGrid();
+    startRelease(this.world, this.world.player!);
   }
 
   /** Reloads the active weapon early. */

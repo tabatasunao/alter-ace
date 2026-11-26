@@ -18,7 +18,8 @@ AI units of both armies. Each class carries exactly one weapon, wears one armor 
 | Semi-ace | Marksman | Spear | Long beam rifle | Beam | Standard | Enemy |
 | Semi-ace | Circus | Star | Micro-missile swarm | Blast | Heavy plate | Enemy |
 | Semi-ace | Duelist | Blade | Beam saber | Beam | Beam coating | Enemy |
-| Leader | Commander | Nested squares | Beam repeater | Beam | Standard | Both. At least 2 per army |
+| Support | Healer | Cross | Beam pistol | Beam | Standard | Both |
+| Leader | Commander | Nested squares | Beam repeater (enemy: Mega-beam) | Beam | Standard | Both. At least 2 per army |
 
 Allied units are blue, enemy units orange-red, enemy semi-aces magenta with a thin halo.
 
@@ -71,7 +72,7 @@ Enemy only. 520–600 HP, faster than the line units.
 | --- | --- | --- |
 | Marksman | Long beam rifle, range 760, pierces 2. Backs away inside 380 | Standard |
 | Circus | Salvos of 16 micro-missiles launched backwards, weaving as they home. Backs away inside 330 | Heavy plate |
-| Duelist | Beam saber: closes, lunges, then slashes an arc | Beam coating |
+| Duelist | Beam saber: closes, lunges, then slashes an arc. Clashes with the ace's Beam Saber ([weapons.md](weapons.md#beam-saber)) | Beam coating |
 
 Shared traits:
 
@@ -85,16 +86,26 @@ Shared traits:
   4. A stun drops a raised shield and prevents it rising.
 - **Death:** an enemy semi-ace's death shows a banner.
 
+### Healer
+
+110 HP. Beam pistol, range 270. **Heal pulse:** every 10 s, a shockwave (an expanding ring) heals every unit of its army within 220 by 15% of that unit's max HP, up to full. Allied Healers also heal the ace. A stunned Healer's timer pauses.
+
 ### Commander
 
-900 HP. Rapid beam repeater, range 460. **Aura:** units of its army within 230 fire 30% faster (shown as a faint ground ring). Always hunts the ace. Every army has at least two. An enemy Commander's death shows a banner.
+900 HP. **Weapon:** allied Commanders carry a rapid beam repeater (range 460). Enemy Commanders carry the **mega-beam**: a charged beam, range 900, every 10 s. It discharges as a heavy beam with a muzzle flare and shakes the screen when it passes within 450 of the ace.
+
+1. **Charge (1.5 s):** a sight line over a wide band tracks the target.
+2. **Lock (last 0.45 s):** the line freezes, bright and dashed.
+3. **Fire:** the beam hits every hostile unit within 28 of the line, for 100 damage before scaling (50 to the ace).
+
+A stun cancels the charge. **Aura:** units of its army within 230 fire 30% faster (shown as a faint ground ring). Always hunts the ace. Every army has at least two. An enemy Commander's death shows a banner.
 
 ## AI behavior
 
 Each AI unit runs this loop every step (`SoldierAISystem`):
 
 1. **Stunned:** stops and does nothing until the stun ends.
-2. **Busy:** a unit running a unit action (a Sentinel's lance charge, a Duelist's lunge) does not steer.
+2. **Busy:** a Duelist mid-lunge does not steer. A unit charging a lance (a Sentinel, or an enemy Commander's mega-beam) keeps moving but fires nothing else.
 3. **Target selection**, every 0.45–0.8 s, or immediately when the target dies. First match wins:
    1. **Decoy:** an enemy unit within a Decoy Beacon's 650 pull radius targets the decoy.
    2. **The ace:** a hunter within 800 of the ace, or a stalking unit at any distance, targets the ace.
@@ -104,6 +115,8 @@ Each AI unit runs this loop every step (`SoldierAISystem`):
    - Class has `kiteDistance` and the target is closer than it: back away.
    - Otherwise: strafe sideways at half speed, changing direction every 1–3 s.
 5. **Fire** when the target is in range and the weapon is ready. Shot timing varies by ±15%. A Commander's aura makes cooldowns run 30% faster.
+   - **Close-quarters fire:** within 400 of the ace, a unit shooting at it leads it more (up to the full intercept), narrows its spread (to ×0.3) and fires more often (up to ×2), each rising linearly to full at point blank. Shots at other units are unaffected.
+   - **Turns for charged attacks:** at most 2 units charge a lance or mega-beam at the ace at once, and each fires at least 0.6 s after the one before (the charge runs longer if needed). A unit without a turn holds fire and tries again 0.5 s later. Charges at other units need no turn.
 6. **No target:** march toward the center of the opposing army.
 7. **Leash:** a stalking semi-ace beyond 400 of the ace, or a pack member beyond 220 of its leader, heads back. It keeps firing at targets in range.
 

@@ -7,7 +7,7 @@ import { burstAngle, type WeaponBehavior } from '../WeaponBehavior';
 const BURST_NEAR = 0.3;
 const BURST_FAR = 0.8;
 
-/** A lobbed shell aimed where the target is heading (Plasma Mortar). */
+/** A lobbed shell aimed where the target is heading (Plasma Mortar). Its center stuns and exposes (StunSpec). */
 export const mortar: WeaponBehavior<MortarWeapon> = {
   fire({ world, player: P, weapon: w, targets }) {
     const t = targets[0]!;
@@ -24,6 +24,7 @@ export const mortar: WeaponBehavior<MortarWeapon> = {
       flight: w.flight,
       splash: w.splash,
       splashDmg: w.splashDmg,
+      stun: w.stun,
       team: P.team,
       ...aceHit(w),
     });
@@ -46,6 +47,7 @@ export const mortar: WeaponBehavior<MortarWeapon> = {
         flight: w.flight,
         splash: w.splash,
         splashDmg: w.splashDmg,
+        stun: w.stun,
         team: P.team,
         ...aceHit(w),
       });

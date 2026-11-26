@@ -80,7 +80,7 @@ describe('Combat', () => {
     const center = addSoldier(world, 'bulwark', ENEMY, 3000, 1000);
     const edge = addSoldier(world, 'bulwark', ENEMY, 3000 + 100 + center.size / 2, 1000);
     const friend = addSoldier(world, 'bulwark', ALLY, 3000, 1050);
-    world.combat.explode(3000, 1000, 100, 40, ALLY, aceHit(catalog, 'bazooka'));
+    world.combat.explode(3000, 1000, 100, 40, ALLY, aceHit(catalog, 'mortar'));
     expect(center.maxHp - center.hp).toBeCloseTo(40);
     expect(edge.maxHp - edge.hp).toBeCloseTo(20);
     expect(friend.hp).toBe(friend.maxHp);

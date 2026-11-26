@@ -72,6 +72,23 @@ interface WeaponBase {
   reload: number;
   /** Super release burst: the arc (degrees) around the ace's facing that its rounds spray into (default 360). */
   burstArc?: number;
+  /** Keeps firing during a dash (other weapons hold fire). */
+  fireWhileDashing?: boolean;
+  /**
+   * Time between shots at the ace's top speed, as a multiple of `interval` (1 at a standstill,
+   * linear between): below 1, the weapon fires faster on the move.
+   */
+  movingFireInterval?: number;
+  /**
+   * Spin-up: the fire rate rises from × `start` to × `top` over `upTime` s of continuous fire, and
+   * falls back over `downTime` s once it stops (a dash or switching weapons stops it).
+   */
+  spin?: { start: number; top: number; upTime: number; downTime: number };
+  /**
+   * Heat instead of a magazine: `mag` is the shots to overheat and `reload` the overheat lockout.
+   * Heat falls by `coolPerSecond` shots' worth per second once it has not fired for `coolDelay` s.
+   */
+  heat?: { coolPerSecond: number; coolDelay: number };
 }
 
 export interface BulletWeapon extends WeaponBase {
@@ -80,14 +97,6 @@ export interface BulletWeapon extends WeaponBase {
   spread: number;
   /** Units each round passes through, so one round can hit pierce + 1 (default 0). */
   pierce?: number;
-}
-
-export interface ScatterWeapon extends WeaponBase {
-  behavior: 'scatter';
-  speed: number;
-  spread: number;
-  pellets: number;
-  speedJitter: number;
 }
 
 export interface BeamWeapon extends WeaponBase {
@@ -100,6 +109,25 @@ export interface BeamWeapon extends WeaponBase {
 export interface RailWeapon extends WeaponBase {
   behavior: 'rail';
   hitWidth: number;
+  /** Steady aim: damage × `still` when the ace is at a standstill, × `moving` at its top speed (linear between). */
+  steady?: { still: number; moving: number };
+}
+
+/**
+ * Pellets every shot, and every `blastEvery`-th shot of a magazine also a point-blank blast
+ * (Breach Cannon): centered `blast.offset` in front, radius `blast.radius`, `blast.dmg` falling
+ * off to half at the edge, knocking enemies away at `blast.push` (slowing over `blast.pushTime`)
+ * and kicking the ace back at `recoil`.
+ */
+export interface BreachWeapon extends WeaponBase {
+  behavior: 'breach';
+  speed: number;
+  spread: number;
+  pellets: number;
+  speedJitter: number;
+  blastEvery: number;
+  blast: { radius: number; offset: number; dmg: number; push: number; pushTime: number };
+  recoil: number;
 }
 
 export interface MissileWeapon extends WeaponBase {
@@ -122,20 +150,24 @@ export interface MissileWeapon extends WeaponBase {
   retargetRadius: number;
 }
 
-export interface RocketWeapon extends WeaponBase {
-  behavior: 'rocket';
-  speed: number;
-  splash: number;
-  splashDmg: number;
-  radius: number;
-}
-
 export interface MortarWeapon extends WeaponBase {
   behavior: 'mortar';
   splash: number;
   splashDmg: number;
   flight: number;
   leadFactor: number;
+  /** The stun at the center of each landing (see StunSpec). */
+  stun: StunSpec;
+}
+
+/**
+ * A stun around a point: hostile units within `radius` (measured to their edge) are stunned for
+ * `time` s and, while it lasts, are exposed: hits from the ace's side deal × `exposedMul`.
+ */
+export interface StunSpec {
+  radius: number;
+  time: number;
+  exposedMul: number;
 }
 
 export interface SaberWeapon extends WeaponBase {
@@ -150,13 +182,12 @@ export interface SaberWeapon extends WeaponBase {
 
 export type WeaponDef =
   | BulletWeapon
-  | ScatterWeapon
   | BeamWeapon
   | RailWeapon
   | MissileWeapon
-  | RocketWeapon
   | MortarWeapon
-  | SaberWeapon;
+  | SaberWeapon
+  | BreachWeapon;
 
 export type WeaponBehaviorName = WeaponDef['behavior'];
 
@@ -170,27 +201,39 @@ interface ToolBase {
   id: string;
   name: string;
   desc: string;
+  /** What the tool does during super release (shown on its card). */
+  releaseDesc: string;
   cooldown: number;
 }
 
+/** During super release: heals `healFraction` of max HP over the release. */
 export interface RepairTool extends ToolBase {
   effect: 'repair';
   healFraction: number;
   duration: number;
 }
 
+/** During super release: a burst at the start and every `releaseInterval` s. */
 export interface EmpTool extends ToolBase {
   effect: 'emp';
   radius: number;
   stun: number;
+  releaseInterval: number;
 }
 
+/**
+ * During super release: an afterimage decoy at the ace's position at the start and every
+ * `releaseInterval` s, with `releaseHp` HP for `releaseLife` s.
+ */
 export interface DecoyTool extends ToolBase {
   effect: 'decoy';
   hp: number;
   life: number;
   size: number;
   pullRadius: number;
+  releaseInterval: number;
+  releaseHp: number;
+  releaseLife: number;
 }
 
 export interface OverboostTool extends ToolBase {
@@ -315,11 +358,16 @@ export interface LanceUnitWeapon extends UnitWeaponBase {
   behavior: 'lance';
   charge: number;
   lock: number;
+  /** How the discharge is drawn: a fading line (default) or a heavy beam with glow and a muzzle flare. */
+  look?: BeamLook;
   /** Extra hit width on each side of the line. */
   width: number;
   /** How far ahead of a moving target the line locks: 0 = at it, 1 = where it will be at release. */
   lead: number;
 }
+
+/** The effect a line attack's discharge is drawn with (an `Effect` type). */
+export type BeamLook = 'rail' | 'heavyBeam';
 
 export type UnitWeaponDef = ShotUnitWeapon | MissileUnitWeapon | LanceUnitWeapon | SaberUnitWeapon;
 export type UnitWeaponBehaviorName = UnitWeaponDef['behavior'];
@@ -339,6 +387,8 @@ export interface UnitClassDef {
   speed: number;
   /** The class's one weapon: a unit weapon id from unitWeapons.json. */
   weapon: string;
+  /** Replaces `weapon` for units of this class in the enemy army. */
+  enemyWeapon?: string;
   /** Used by the Strongest aim mode. */
   rank: number;
   /** Armor id (damage.json): how much each damage type hurts this class. */
@@ -359,6 +409,11 @@ export interface UnitClassDef {
    */
   rally?: { min: number; max: number; radius: number; follow: number };
   aura?: { radius: number; fireRateMul: number };
+  /**
+   * Heal pulse: every `interval` seconds, units of the same army within `radius` (and the ace,
+   * for an allied unit) regain `amount` of their max HP. A stun pauses the timer.
+   */
+  heal?: { interval: number; radius: number; amount: number };
   /**
    * A semi-ace's shield: the first hit once it is recharged raises it, and for `duration`
    * seconds nothing hurts the unit. Recharges for `cooldown` seconds. A stun drops it.
@@ -420,6 +475,8 @@ export interface LoadoutData {
   slots: number;
   enemyCount: { min: number; max: number; step: number };
   defaultLoadout: { frame: string; slots: string[]; aim: string; enemies: number };
+  /** Weapon medals for career kills with one weapon, lowest first. */
+  medals: { name: string; kills: number }[];
 }
 
 // ---------- Ace movement ----------
@@ -482,6 +539,17 @@ export interface BattleData {
     auraBuffTime: number;
     separationGap: number;
     edgeMargin: number;
+    /**
+     * Close-quarters fire at the ace: within `range` of the ace, a unit's lead rises from its
+     * weapon's `lead` toward `lead` (a weapon that leads more keeps its own), its spread narrows
+     * toward × `spread`, and it fires up to `fireRate` times as often, all full at point blank.
+     */
+    closeAim: { range: number; lead: number; spread: number; fireRate: number };
+    /**
+     * Charged attacks (lances) aimed at the ace take turns: at most `max` charge at once, each fires
+     * at least `gap` s after the one before, and a unit denied a turn tries again after `retry` s.
+     */
+    aceCharges: { max: number; gap: number; retry: number };
   };
   player: {
     size: number;
@@ -494,11 +562,44 @@ export interface BattleData {
     dashDuration: number;
     dashIframes: number;
     /**
-     * Super release (Space): every weapon hardpoint fires at once for `duration` s, then recharges for
-     * `cooldown` s. It opens with a burst: each weapon launches `openingBurst` seconds' worth of its
-     * fire at once in random directions (2.5 = 150% more than a second of fire).
+     * Super release (Space): every weapon hardpoint fires at once for `duration` s and every tool
+     * hardpoint runs its release effect. It opens with a burst: each weapon launches `openingBurst`
+     * seconds' worth of its fire at once in random directions (2.5 = 150% more than a second of fire).
+     * The opening gives `openingIframes` s of invulnerability; for the whole release the ace takes
+     * × `damageTakenMul` damage. It needs a full gauge (0–1), which `charge` fills.
      */
-    superRelease: { duration: number; cooldown: number; openingBurst: number };
+    superRelease: {
+      duration: number;
+      openingBurst: number;
+      openingIframes: number;
+      damageTakenMul: number;
+      charge: ReleaseCharge;
+    };
+    /** A close dodge: an attack that touches the ace during a dash's invulnerability. Once per dash. */
+    dodge: {
+      /** Share of the frame's dash recharge given back (1 = dash ready again). */
+      dashRefund: number;
+      /** Release gauge gained. */
+      releaseCharge: number;
+    };
+  };
+  /** Hit-stop, screen shake and screen flash for big moments (see src/sim/impact.ts). */
+  impact: ImpactData;
+  /** How a won sortie is rated (src/game/rating.ts). */
+  rating: RatingData;
+  /**
+   * Saber meets saber (src/sim/clash.ts): neither cuts, and both bounce apart. The ace is pushed
+   * away at `acePush`; the enemy is knocked back at `unitPush`, slowing over `pushTime`.
+   */
+  clash: { acePush: number; unitPush: number; pushTime: number };
+  /** Banners that praise the ace (PraiseSystem). */
+  praise: {
+    /** A banner every this many ace kills. */
+    killMilestone: number;
+    /** A banner when the ace downs `kills` enemies within `window` s; then quiet for `cooldown` s. */
+    streak: { kills: number; window: number; cooldown: number };
+    /** A banner when a super release ends with at least this many kills. */
+    releaseMinKills: number;
   };
   camera: {
     minZoom: number;
@@ -510,9 +611,83 @@ export interface BattleData {
     demoZoom: ZoomFit;
   };
   alerts: { criticalHp: number; criticalReset: number; breakingAllies: number };
-  /** Highest first; the last entry should have minShare 0. */
-  ranks: { letter: string; minShare: number }[];
   timing: { maxFrameDt: number; resultDelay: number; demoResetDelay: number; bannerDuration: number };
+}
+
+/** How the release gauge (0–1) fills while no release is running. */
+export interface ReleaseCharge {
+  /** Per enemy the ace destroys. */
+  perKill: number;
+  /** Kills within this distance of the ace count `closeKillMul` times. */
+  closeRadius: number;
+  closeKillMul: number;
+  /** Per second, regardless of kills. */
+  perSecond: number;
+}
+
+/**
+ * One impact: `freeze` s of hit-stop (the simulation holds while effects keep playing), a screen
+ * shake of `shake` CSS pixels that settles over `shakeTime` s, and a screen flash of `flash`
+ * strength (0–1) over `flashTime` s. `danger` tints the flash with the danger color. `hurt` (0–1)
+ * reddens the screen edges, fading over `hurtTime` s.
+ */
+export interface ImpactDef {
+  freeze: number;
+  shake: number;
+  flash: number;
+  danger?: boolean;
+  hurt?: number;
+}
+
+export interface ImpactData {
+  /** After a freeze, no new freeze starts for this many seconds (the ace's death excepted). */
+  freezeGap: number;
+  shakeTime: number;
+  flashTime: number;
+  hurtTime: number;
+  /**
+   * Any hit that lands on the ace, scaled by its damage (full at `fullShare` of max HP or more).
+   * The ace also jolts and flashes for `react` s.
+   */
+  aceHit: ImpactDef & { fullShare: number; react: number };
+  /** The ace destroys a class with `killBanner` (Commander, semi-ace). */
+  bigKill: ImpactDef;
+  /** One hit takes at least `minShare` of the ace's max HP. */
+  heavyHit: ImpactDef & { minShare: number };
+  /** Super release starts. */
+  release: ImpactDef;
+  /** A close dodge. */
+  dodge: ImpactDef;
+  /** The ace's saber meets an enemy saber. */
+  clash: ImpactDef;
+  /** One of the ace's melee slashes connects. */
+  slash: ImpactDef;
+  /** The ace is destroyed; then the battle runs at × `slowScale` speed for `slow` s. */
+  aceDeath: ImpactDef & { slow: number; slowScale: number };
+  /** A blast of at least `minRadius` within `range` of the ace; the shake fades with distance. */
+  blast: ImpactDef & { minRadius: number; range: number };
+  /** A hostile line attack at least `minWidth` wide passing within `range` of the ace; fades with distance. */
+  beam: ImpactDef & { minWidth: number; range: number };
+  /** One of the ace's hits that deals at least `minDamage` makes the unit judder for `time` s (visual). */
+  stagger: { minDamage: number; time: number };
+}
+
+/**
+ * A won sortie scores `pointsPerEnemy` per enemy in the army, times three factors:
+ * pace (par time ÷ clear time, clamped), integrity (1 − `damagePerMaxHp` per max HP of damage
+ * taken, floored) and the allied line (1 + `lineBonus` × share of allies alive).
+ * The rank letter comes from the score per enemy.
+ */
+export interface RatingData {
+  pointsPerEnemy: number;
+  parSecondsPerEnemy: number;
+  paceMin: number;
+  paceMax: number;
+  damagePerMaxHp: number;
+  integrityMin: number;
+  lineBonus: number;
+  /** Highest first; the last entry should have minScore 0. */
+  ranks: { letter: string; minScore: number }[];
 }
 
 // ---------- Everything ----------

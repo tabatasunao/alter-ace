@@ -43,6 +43,7 @@ export class PlayerMovementSystem implements System {
       lunge.remaining -= dt;
       P.x += lunge.vx * dt;
       P.y += lunge.vy * dt;
+      world.addFx({ type: 'ghost', x: P.x, y: P.y, t: 0, life: 0.16 });
       if (lunge.remaining <= 0) {
         P.lunge = null;
         lunge.onArrive();

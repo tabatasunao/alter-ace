@@ -1,7 +1,11 @@
 import type { Viewport } from '../sim/scenarios';
 import type { World } from '../sim/World';
+import { shakeOffset } from './impactView';
 import type { ScreenLayer, WorldLayer } from './layers';
 import type { Palette } from './palette';
+
+/** Shake and flash strength when the viewer asked for reduced motion. */
+const REDUCED_MOTION = 0.3;
 
 /**
  * Draws a World onto the battlefield canvas by running its layers in order.
@@ -10,6 +14,7 @@ import type { Palette } from './palette';
 export class CanvasRenderer {
   private readonly ctx: CanvasRenderingContext2D;
   private dpr = 1;
+  private motion = 1;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -22,6 +27,14 @@ export class CanvasRenderer {
     this.ctx = ctx;
     new ResizeObserver(() => this.resize()).observe(canvas);
     this.resize();
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (reduce) {
+      const apply = () => {
+        this.motion = reduce.matches ? REDUCED_MOTION : 1;
+      };
+      apply();
+      reduce.addEventListener?.('change', apply);
+    }
   }
 
   /** Canvas size in CSS pixels (with fallbacks before layout). */
@@ -49,11 +62,13 @@ export class CanvasRenderer {
     if (!world) return;
 
     const { x, y, zoom: z } = world.camera;
-    ctx.setTransform(dpr * z, 0, 0, dpr * z, dpr * (vw / 2 - x * z), dpr * (vh / 2 - y * z));
+    const shake = shakeOffset(world.impact, z, this.motion);
+    ctx.setTransform(dpr * z, 0, 0, dpr * z, dpr * (vw / 2 - x * z + shake.x), dpr * (vh / 2 - y * z + shake.y));
     const view = { x0: x - vw / 2 / z, x1: x + vw / 2 / z, y0: y - vh / 2 / z, y1: y + vh / 2 / z, zoom: z };
     for (const layer of this.worldLayers) layer.draw({ ctx, world, palette, view });
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    for (const layer of this.screenLayers) layer.draw(ctx, palette);
+    const frame = { ctx, world, palette, view, width: vw, height: vh, motion: this.motion };
+    for (const layer of this.screenLayers) layer.draw(frame);
   }
 }

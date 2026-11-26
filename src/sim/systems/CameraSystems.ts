@@ -3,6 +3,7 @@ import type { System } from '../System';
 import type { World } from '../World';
 
 abstract class SmoothCamera implements System {
+  readonly duringFreeze = true;
   protected abstract target(world: World): Point;
   protected abstract followRate(world: World): number;
 

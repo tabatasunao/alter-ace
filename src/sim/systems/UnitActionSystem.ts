@@ -10,7 +10,9 @@ export class UnitActionSystem implements System {
         u.action = null;
         continue;
       }
-      if (u.action.step(dt)) u.action = null;
+      const action = u.action;
+      // A finishing action may start another (a clash knocks the unit back); keep that one.
+      if (action.step(dt) && u.action === action) u.action = null;
     }
   }
 }

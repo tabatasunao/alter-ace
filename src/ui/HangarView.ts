@@ -1,6 +1,7 @@
 import { clamp } from '../core/math';
 import type { Catalog } from '../data/catalog';
 import { isWeapon, type ArmamentDef, type FrameDef, type WeaponBehaviorName, type WeaponDef } from '../data/types';
+import { medalFor, nextMedal, type Career } from '../game/career';
 import type { LoadoutEditor } from '../game/loadout';
 import { armorLine, damageTypeBadge, matchupLine, slotLabel, unitTraitLines, unitWeaponLine } from './damageText';
 import { byId } from './dom';
@@ -8,6 +9,8 @@ import { byId } from './dom';
 export interface HangarModel {
   readonly catalog: Catalog;
   readonly editor: LoadoutEditor;
+  /** The career so far (weapon kills for medals). */
+  readonly career: () => Career;
 }
 
 /** The pre-battle screen: frame, aim mode, enemy count and hardpoints. Edits go to the LoadoutEditor. */
@@ -90,6 +93,7 @@ export class HangarView {
     }).join('');
     this.el.hpCount.textContent = `${sel.slots.length} / ${slotCount}`;
 
+    const career = this.model.career();
     this.el.arsenal.innerHTML = catalog.armaments
       .map((def) => {
         const idx = sel.slots.indexOf(def.id);
@@ -103,6 +107,7 @@ export class HangarView {
         <span class="as">${describeArmament(def)}</span>
         ${matchups ? `<span class="am">${matchups}</span>` : ''}
         <span class="ad">${def.desc}</span>
+        ${isWeapon(def) ? medalLine(career.kills[def.id] ?? 0, catalog.loadout.medals) : `<span class="ar"><b>Release</b> ${def.releaseDesc}</span>`}
       </button>`;
       })
       .join('');
@@ -115,7 +120,7 @@ export class HangarView {
       .join('');
 
     const release = catalog.battle.player.superRelease;
-    this.el.releaseHint.textContent = `Super release: a fireworks burst from every weapon, then every weapon hardpoint fires at once for ${release.duration} s. Recharges in ${release.cooldown} s.`;
+    this.el.releaseHint.textContent = `Super release, when the gauge is full: a fireworks burst from every weapon, then every weapon hardpoint fires and every tool runs its release effect for ${release.duration} s, with ${Math.round((1 - release.damageTakenMul) * 100)}% less damage taken. Kills refill the gauge, close ones faster.`;
 
     const { min, max, step } = catalog.loadout.enemyCount;
     Object.assign(this.el.enemyCount, { min: String(min), max: String(max), step: String(step), value: String(sel.enemies) });
@@ -184,14 +189,21 @@ function kindLabel(def: ArmamentDef): string {
 
 type DamageText = { readonly [B in WeaponBehaviorName]: (w: Extract<WeaponDef, { behavior: B }>) => string };
 
+/** A weapon card's medal line: the medal earned (if any), career kills, and the next medal. */
+function medalLine(kills: number, medals: Catalog['loadout']['medals']): string {
+  const now = medalFor(kills, medals);
+  const next = nextMedal(kills, medals);
+  const parts = [now ? `<b class="m-${now.name.toLowerCase()}">★ ${now.name}</b>` : '', `${kills} kills`, next ? `${next.name} at ${next.kills}` : 'every medal earned'];
+  return `<span class="medal">${parts.filter(Boolean).join(' · ')}</span>`;
+}
+
 /** How each weapon behavior states its damage on a card. TypeScript insists on one per behavior. */
 const DAMAGE_TEXT: DamageText = {
   bullet: (w) => `DMG ${w.dmg}`,
-  scatter: (w) => `DMG ${w.dmg}×${w.pellets}`,
   beam: (w) => `DMG ${w.dmg}`,
-  rail: (w) => `DMG ${w.dmg}`,
+  rail: (w) => (w.steady ? `DMG ${Math.round(w.dmg * w.steady.moving)}–${Math.round(w.dmg * w.steady.still)}` : `DMG ${w.dmg}`),
   missile: (w) => `DMG ${w.dmg}×${w.salvo}`,
-  rocket: (w) => `DMG ${w.dmg}+${w.splashDmg}`,
+  breach: (w) => `DMG ${w.dmg}×${w.pellets} · Blast ${w.blast.dmg}`,
   mortar: (w) => `Blast ${w.splashDmg}`,
   saber: (w) => `DMG ${w.dmg}`,
 };
@@ -201,7 +213,8 @@ export function describeArmament(def: ArmamentDef): string {
   if (!isWeapon(def)) return `Recharge ${def.cooldown} s`;
   const mag = def.mag === null ? '∞' : def.mag;
   const dmg = (DAMAGE_TEXT[def.behavior] as (w: WeaponDef) => string)(def);
-  return `${dmg} · Range ${def.range}<br>Mag ${mag}${def.reload ? ` · Reload ${def.reload} s` : ''}`;
+  const ammo = def.heat ? `Heat ${mag} shots · Overheat ${def.reload} s` : `Mag ${mag}${def.reload ? ` · Reload ${def.reload} s` : ''}`;
+  return `${dmg} · Range ${def.range}<br>${ammo}`;
 }
 
 interface BestFrameStats {

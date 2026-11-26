@@ -1,5 +1,7 @@
 import { segmentDistance, wrapAngle } from '../core/math';
+import type { BeamLook, StunSpec } from '../data/types';
 import type { FlyingShot, Hit, Homing, Team, Tone, Unit } from './entities';
+import { kick } from './impact';
 import type { World } from './World';
 
 /**
@@ -27,18 +29,47 @@ export interface ArcSpec {
   readonly dmg: number;
 }
 
-/** A saber slash: hits every hostile unit within reach in the arc around `angle`, plus anything touching. */
-export function arcSlash(world: World, a: Attacker, angle: number, s: ArcSpec, hit: Hit, tone: Tone): void {
+/**
+ * A saber slash: hits every hostile unit within reach in the arc around `angle`, plus anything
+ * touching. A unit for which `parry` returns true is not cut (the caller handled it: a clash).
+ * Returns how many units it cut.
+ */
+export function arcSlash(world: World, a: Attacker, angle: number, s: ArcSpec, hit: Hit, tone: Tone, parry?: (u: Unit) => boolean): number {
+  let hits = 0;
   world.grid.eachNear(a.x, a.y, s.reach + 20, (u) => {
     if (u.team === a.team || !u.alive) return;
     const dx = u.x - a.x;
     const dy = u.y - a.y;
     const d = Math.hypot(dx, dy);
     if (d > s.reach + u.size * 0.5) return;
-    if (Math.abs(wrapAngle(Math.atan2(dy, dx) - angle)) <= s.half || d < s.closeRange) world.combat.damage(u, s.dmg, hit);
+    if (Math.abs(wrapAngle(Math.atan2(dy, dx) - angle)) <= s.half || d < s.closeRange) {
+      if (parry?.(u)) return;
+      world.combat.damage(u, s.dmg, hit);
+      world.addFx({ type: 'flare', x: u.x, y: u.y, r: u.size * 0.8 + 4, t: 0, life: 0.1, tone });
+      hits++;
+    }
   });
-  world.addFx({ type: 'slash', x: a.x, y: a.y, a: angle, half: s.half, r: s.reach, t: 0, life: 0.22, tone });
+  world.addFx({ type: 'slash', x: a.x, y: a.y, a: angle, half: s.half, r: s.reach, t: 0, life: SLASH_LIFE, tone });
+  return hits;
 }
+
+/**
+ * Stuns hostile units around a point and exposes them (see StunSpec); a stun also drops a raised
+ * shield and keeps it down (ShieldSystem). Shows the shockwave.
+ */
+export function stunBlast(world: World, x: number, y: number, s: StunSpec, team: Team): void {
+  world.grid.eachNear(x, y, s.radius + MAX_UNIT_RADIUS, (u) => {
+    if (u.team === team || !u.alive || u.kind !== 'soldier') return;
+    if (Math.hypot(u.x - x, u.y - y) - u.size * 0.5 > s.radius) return;
+    u.stunT = Math.max(u.stunT, s.time);
+    u.exposedT = Math.max(u.exposedT, s.time);
+    u.exposedMul = s.exposedMul;
+  });
+  world.addFx({ type: 'emp', x, y, r: s.radius, t: 0, life: 0.4 });
+}
+
+/** Seconds a slash's blade trail stays on screen (it sweeps open, then glows and fades). */
+const SLASH_LIFE = 0.34;
 
 export interface LineSpec {
   readonly range: number;
@@ -47,7 +78,12 @@ export interface LineSpec {
   readonly dmg: number;
   /** Peak width of the drawn line. */
   readonly lineWidth: number;
+  /** How the discharge is drawn (default `rail`). */
+  readonly look?: BeamLook;
 }
+
+/** Seconds each discharge look stays on screen. */
+const LOOK_LIFE: Readonly<Record<BeamLook, number>> = { rail: 0.3, heavyBeam: 0.6 };
 
 /**
  * An instant beam (Railgun, Beam lance): hits every hostile unit on the line out to full range at
@@ -60,7 +96,15 @@ export function lineStrike(world: World, a: Attacker, angle: number, s: LineSpec
     if (u.team === a.team || !u.alive) return;
     if (segmentDistance(u.x, u.y, a.x, a.y, x2, y2) < u.size * 0.5 + s.width) world.combat.damage(u, s.dmg, hit);
   });
-  world.addFx({ type: 'rail', x: a.x, y: a.y, x2, y2, t: 0, life: 0.3, tone, width: s.lineWidth });
+  const look = s.look ?? 'rail';
+  world.addFx({ type: look, x: a.x, y: a.y, x2, y2, t: 0, life: LOOK_LIFE[look], tone, width: s.lineWidth });
+  // A wide hostile beam shakes the screen when it passes near the ace.
+  const beam = world.catalog.battle.impact.beam;
+  const P = world.player;
+  if (P?.alive && P.team !== a.team && s.width >= beam.minWidth) {
+    const d = segmentDistance(P.x, P.y, a.x, a.y, x2, y2);
+    if (d < beam.range) kick(world, beam, 1 - d / beam.range);
+  }
 }
 
 /** Angle offset of shot `i` of `n` spread evenly across `fan` radians (0 for a single shot). */

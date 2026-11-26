@@ -1,5 +1,6 @@
 import { TAU } from '../../core/math';
 import type { Player } from '../../sim/entities';
+import { speedFraction } from '../../sim/statuses';
 import type { WorldFrame, WorldLayer } from '../layers';
 
 const CORNERS = [
@@ -9,7 +10,17 @@ const CORNERS = [
   [-1, 1],
 ] as const;
 
-/** The ace: weapon range ring, reticle on the current target, and the frame itself. */
+/** How much the ace stretches along a saber lunge (and squashes across it). */
+const LUNGE_STRETCH = 1.45;
+
+/** Jolt of the ace's body at the start of a full-strength hit, in world units. */
+const HURT_JOLT = 5;
+
+/**
+ * The ace: weapon range ring, a pulsing ring at the close-kill radius while super release is
+ * ready (kills that close charge the gauge faster), reticle on the current target, and the frame.
+ * A hit makes the frame jolt and blink red, then dark, before it settles.
+ */
 export class PlayerLayer implements WorldLayer {
   draw({ ctx, world, palette, view }: WorldFrame): void {
     const P = world.player;
@@ -28,6 +39,31 @@ export class PlayerLayer implements WorldLayer {
       ctx.setLineDash([]);
     }
 
+    if (!P.release && !over) {
+      // The close-kill ring builds up clockwise as the release gauge fills, then pulses when full.
+      const close = world.catalog.battle.player.superRelease.charge.closeRadius;
+      ctx.strokeStyle = palette.accent;
+      if (P.releaseCharge >= 1) {
+        ctx.globalAlpha = 0.35 + 0.2 * Math.sin(world.impact.clock * 5);
+        ctx.lineWidth = 2 / z;
+        ctx.beginPath();
+        ctx.arc(P.x, P.y, close, 0, TAU);
+        ctx.stroke();
+      } else {
+        ctx.lineWidth = 1 / z;
+        ctx.globalAlpha = 0.06;
+        ctx.beginPath();
+        ctx.arc(P.x, P.y, close, 0, TAU);
+        ctx.stroke();
+        ctx.globalAlpha = 0.22;
+        ctx.lineWidth = 2 / z;
+        ctx.beginPath();
+        ctx.arc(P.x, P.y, close, -Math.PI / 2, -Math.PI / 2 + TAU * P.releaseCharge);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
     const t = P.reticle;
     if (t && t.alive && !over) {
       ctx.strokeStyle = palette.aimLine;
@@ -36,7 +72,9 @@ export class PlayerLayer implements WorldLayer {
       ctx.moveTo(P.x, P.y);
       ctx.lineTo(t.x, t.y);
       ctx.stroke();
-      const r = t.size * 0.5 + 7;
+      // A steady-aim weapon (Railgun) opens its brackets as the ace speeds up.
+      const loose = slot?.kind === 'weapon' && slot.def.behavior === 'rail' && slot.def.steady ? 12 * speedFraction(P) : 0;
+      const r = t.size * 0.5 + 7 + loose;
       const L = 6;
       ctx.strokeStyle = palette.accent;
       ctx.lineWidth = 2;
@@ -53,16 +91,26 @@ export class PlayerLayer implements WorldLayer {
 
     this.drawThrust(ctx, P, palette.accent, world.t, over);
 
+    const react = world.catalog.battle.impact.aceHit.react || 1;
+    const hurt = P.hurtT > 0 ? P.hurtT / react : 0;
+    const jolt = HURT_JOLT * P.hurtK * hurt;
+    const clock = world.impact.clock;
     ctx.save();
-    ctx.translate(P.x, P.y);
-    ctx.rotate(P.facing);
+    ctx.translate(P.x + jolt * Math.sin(clock * 120), P.y + jolt * 0.6 * Math.cos(clock * 97));
+    if (P.lunge) {
+      // Stretched along the lunge, squashed across it.
+      ctx.rotate(Math.atan2(P.lunge.vy, P.lunge.vx));
+      ctx.scale(LUNGE_STRETCH, 1 / LUNGE_STRETCH);
+    } else {
+      ctx.rotate(P.facing + 0.012 * jolt * Math.sin(clock * 70));
+    }
     if (P.iframes > 0) ctx.globalAlpha = 0.6;
     if (P.statuses.some((s) => s.ring)) {
       ctx.strokeStyle = palette.tool;
       ctx.lineWidth = 2;
       ctx.strokeRect(-15, -15, 30, 30);
     }
-    ctx.fillStyle = P.flash > 0 ? palette.danger : palette.ace;
+    ctx.fillStyle = hurt > 0.6 ? palette.danger : hurt > 0.35 ? palette.field : palette.ace;
     ctx.fillRect(-8, -8, 16, 16);
     ctx.fillStyle = palette.accent;
     ctx.fillRect(8, -3, 9, 6);

@@ -5,6 +5,8 @@ import type { Catalog } from '../data/catalog';
 import { Combat } from './Combat';
 import type { Decoy, Effect, Player, Projectile, Unit } from './entities';
 import type { BannerTone, GameEvents } from './events';
+import type { AceChargeLedger } from './ai/aceCharges';
+import { newImpactState, type ImpactState } from './impact';
 import { SpatialGrid } from './SpatialGrid';
 import { UnitFactory } from './UnitFactory';
 
@@ -22,6 +24,8 @@ export interface BattleStats {
   kills: number;
   killsBy: Record<string, number>;
   dmgTaken: number;
+  /** Close dodges (src/sim/dodge.ts). */
+  dodges: number;
 }
 
 export interface BattleStatus {
@@ -61,10 +65,15 @@ export class World {
     kills: 0,
     killsBy: {},
     dmgTaken: 0,
+    dodges: 0,
   };
   readonly status: BattleStatus = { over: false, win: false, endAt: 0, paused: false };
   readonly camera: CameraState;
   readonly aim = { index: 0, timer: 0 };
+  /** Hit-stop, slow motion, screen shake and flash (src/sim/impact.ts). */
+  readonly impact: ImpactState = newImpactState();
+  /** Turns for charged attacks aimed at the ace (src/sim/ai/aceCharges.ts). */
+  readonly aceCharges: AceChargeLedger = { holders: [], lastFireAt: -Infinity };
   /** Average position of each team (index = Team), refreshed every step. */
   centroids: [Point | null, Point | null] = [null, null];
 
@@ -116,8 +125,9 @@ export class World {
     if (this.fx.length < this.catalog.battle.limits.maxEffects) this.fx.push(effect);
   }
 
-  banner(text: string, tone: BannerTone = ''): void {
-    this.events.emit('banner', { text, tone });
+  /** A center-screen message. A `minor` one (praise) never replaces a major one still showing. */
+  banner(text: string, tone: BannerTone = '', minor = false): void {
+    this.events.emit('banner', { text, tone, minor });
   }
 
   endBattle(win: boolean): void {

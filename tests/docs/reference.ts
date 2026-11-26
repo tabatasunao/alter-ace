@@ -89,41 +89,59 @@ function weaponSpecials(w: WeaponDef): string {
     case 'bullet':
       if (w.pierce) s.push(`pierces ${w.pierce}`);
       break;
-    case 'scatter':
-      s.push(`spread ±${deg(w.spread)}`);
-      break;
     case 'beam':
       s.push(`pierces ${w.pierce}`, `width ${n(w.radius)}`);
       break;
     case 'rail':
       s.push('instant line', `width ${n(w.hitWidth)}`);
+      if (w.steady) s.push(`damage ${mul(w.steady.still)} standing still to ${mul(w.steady.moving)} at top speed`);
       break;
     case 'missile':
       s.push(`splash ${n(w.splash)} for ${n(w.splashDmg)}`, `launches ${launchWord(w.launchAngle)}`, `homes after ${sec(w.homingDelay)}`);
       break;
-    case 'rocket':
-      s.push(`splash ${n(w.splash)} for ${n(w.splashDmg)}`);
+    case 'breach':
+      s.push(
+        `${w.pellets} pellets, spread ±${deg(w.spread)}`,
+        `every ${w.blastEvery}th shot a blast ${n(w.blast.radius)} wide for ${n(w.blast.dmg)}, knockback ${n(w.blast.push)}, recoil ${n(w.recoil)}`,
+      );
       break;
     case 'mortar':
-      s.push('lobbed', `${sec(w.flight)} flight`, `splash ${n(w.splash)} for ${n(w.splashDmg)}`);
+      s.push('lobbed', `${sec(w.flight)} flight`, `splash ${n(w.splash)} for ${n(w.splashDmg)}`, `stuns within ${n(w.stun.radius)} for ${sec(w.stun.time)}, exposed ${mul(w.stun.exposedMul)}`);
       break;
     case 'saber':
       s.push(`lunge, slash ${n(w.slash)} reach over ${deg(w.arcHalfAngle * 2)}`, `${sec(w.iframes)} invulnerable`);
       break;
   }
+  if (w.fireWhileDashing) s.push('fires during a dash');
+  if (w.movingFireInterval !== undefined) s.push(`time between shots ${mul(w.movingFireInterval)} at top speed`);
+  if (w.spin) s.push(`spins up from ${mul(w.spin.start)} to ${mul(w.spin.top)} fire rate over ${sec(w.spin.upTime)}`);
+  if (w.heat) s.push(`heat: overheats after ${w.mag} shots, cools ${n(w.heat.coolPerSecond)}/s after ${sec(w.heat.coolDelay)}`);
   if (w.burstArc !== undefined) s.push(`release burst in front ${n(w.burstArc)}°`);
   return s.join('; ');
 }
 
 function tools(catalog: Catalog, out: string[]): void {
   out.push('## Tools', '');
-  out.push("A tool fires once when its key is pressed, then recharges (times are before the frame's multiplier).", '');
+  out.push("A tool fires once when its key is pressed, then recharges (times are before the frame's multiplier). During super release every tool hardpoint runs its release effect, whatever its recharge.", '');
   table(
     out,
-    ['Tool', 'Effect', 'Recharge', 'Details'],
-    'll-l',
-    catalog.tools.map((t) => [t.name, `\`${t.effect}\``, sec(t.cooldown), toolDetails(t)]),
+    ['Tool', 'Effect', 'Recharge', 'Details', 'During super release'],
+    'll-ll',
+    catalog.tools.map((t) => [t.name, `\`${t.effect}\``, sec(t.cooldown), toolDetails(t), toolRelease(t)]),
   );
+}
+
+function toolRelease(t: ToolDef): string {
+  switch (t.effect) {
+    case 'repair':
+      return `heals ${pct(t.healFraction)} of max HP over the release`;
+    case 'emp':
+      return `a burst at the start and every ${sec(t.releaseInterval)}`;
+    case 'decoy':
+      return `an afterimage (${n(t.releaseHp)} HP, ${sec(t.releaseLife)}) at the start and every ${sec(t.releaseInterval)}`;
+    case 'overboost':
+      return 'runs for the whole release';
+  }
 }
 
 function toolDetails(t: ToolDef): string {
@@ -185,7 +203,7 @@ function classes(catalog: Catalog, out: string[]): void {
       n(c.hp),
       n(c.speed),
       n(c.size),
-      catalog.unitWeapon(c.weapon).name,
+      c.enemyWeapon ? `${catalog.unitWeapon(c.weapon).name} (enemy: ${catalog.unitWeapon(c.enemyWeapon).name})` : catalog.unitWeapon(c.weapon).name,
       catalog.armor(c.armor).name,
       share(c.id, allyMix, fillerClass),
       share(c.id, enemyMix, fillerClass),
@@ -204,6 +222,7 @@ function classTraits(c: UnitClassDef): string {
   if (c.rally) s.push(`rallies ${c.rally.min}–${c.rally.max} units`);
   if (c.kiteDistance) s.push(`backs off inside ${n(c.kiteDistance)}`);
   if (c.aura) s.push(`aura: allies within ${n(c.aura.radius)} fire ${pct(c.aura.fireRateMul - 1)} faster`);
+  if (c.heal) s.push(`heals its army within ${n(c.heal.radius)} by ${pct(c.heal.amount)} of max HP every ${sec(c.heal.interval)} (allied Healers: the ace too)`);
   return s.join('; ') || '–';
 }
 
@@ -232,7 +251,10 @@ function unitWeapons(catalog: Catalog, out: string[]): void {
       n(w.range),
       sec(w.interval),
       unitWeaponSpecials(w),
-      catalog.classes.filter((c) => c.weapon === w.id).map((c) => c.name).join(', ') || '–',
+      [
+        ...catalog.classes.filter((c) => c.weapon === w.id).map((c) => (c.enemyWeapon ? `${c.name} (allied)` : c.name)),
+        ...catalog.classes.filter((c) => c.enemyWeapon === w.id).map((c) => `${c.name} (enemy)`),
+      ].join(', ') || '–',
     ]),
   );
 }
@@ -252,7 +274,8 @@ function unitWeaponSpecials(w: UnitWeaponDef): string {
       if (w.weave) s.push('weaving swarm');
       break;
     case 'lance':
-      s.push(`charges ${sec(w.charge)}, aim locks for the last ${sec(w.lock)}`, 'hits the whole line');
+      s.push(`charges ${sec(w.charge)}, aim locks for the last ${sec(w.lock)}`, `hits the whole line within ${n(w.width)}`);
+      if (w.look === 'heavyBeam') s.push('drawn as a heavy beam');
       break;
     case 'saber':
       s.push(`lunge, slash ${n(w.slash)} reach over ${deg(w.arcHalfAngle * 2)}`);
@@ -304,6 +327,19 @@ function rules(catalog: Catalog, out: string[]): void {
     ['Chance an enemy unit hunts the ace', pct(b.balance.aceAggro), '`balance.aceAggro`'],
     ['Range at which hunters find the ace', n(b.balance.aceHuntRange), '`balance.aceHuntRange`'],
     ['AI sight range', n(b.ai.sightRange), '`ai.sightRange`'],
+    [
+      'Close-quarters fire at the ace',
+      b.ai.closeAim.range > 0
+        ? `within ${n(b.ai.closeAim.range)}: lead up to ${n(b.ai.closeAim.lead)}, spread down to ${mul(b.ai.closeAim.spread)}, fire rate up to ${mul(b.ai.closeAim.fireRate)} (full at point blank)`
+        : 'off',
+      '`ai.closeAim`',
+    ],
+    ['Ace body size', n(p.size), '`player.size`'],
+    [
+      'Charged attacks at the ace',
+      `at most ${b.ai.aceCharges.max} at once, shots at least ${sec(b.ai.aceCharges.gap)} apart; a unit without a turn retries after ${sec(b.ai.aceCharges.retry)}`,
+      '`ai.aceCharges`',
+    ],
     ['Ace movement model', `\`${p.movement.model}\``, '`player.movement`'],
   ];
   if (p.movement.model === 'thruster') {
@@ -315,20 +351,64 @@ function rules(catalog: Catalog, out: string[]): void {
   rows.push(
     ['Dash', `${n(p.dashDistance)} in ${sec(p.dashDuration)}, ${sec(p.dashIframes)} invulnerable`, '`player.dash*`'],
     ['Regeneration', `${pct(p.regenPerSecond)} of max HP per second after ${sec(p.regenDelay)} without damage`, '`player.regen*`'],
-    ['Super release', `${sec(sr.duration)} of every weapon firing, ${sec(sr.cooldown)} recharge`, '`player.superRelease`'],
-    ['Super release opening burst', `${n(sr.openingBurst)} s worth of each weapon's fire at once`, '`player.superRelease.openingBurst`'],
+    ['Super release', `${sec(sr.duration)} of every weapon firing and every tool's release effect; damage taken ${mul(sr.damageTakenMul)}`, '`player.superRelease`'],
+    ['Super release opening burst', `${n(sr.openingBurst)} s worth of each weapon's fire at once, ${sec(sr.openingIframes)} invulnerable`, '`player.superRelease.openingBurst`, `.openingIframes`'],
+    [
+      'Super release gauge',
+      `${pct(sr.charge.perKill)} per ace kill (${mul(sr.charge.closeKillMul)} within ${n(sr.charge.closeRadius)}), ${pct(sr.charge.perSecond)} per second; none while a release runs`,
+      '`player.superRelease.charge`',
+    ],
+    ['Close dodge', `dash recharge refunded ${pct(p.dodge.dashRefund)}, release gauge +${pct(p.dodge.releaseCharge)}; once per dash`, '`player.dodge`'],
     ['Critical HP warning', `below ${pct(b.alerts.criticalHp)}`, '`alerts.criticalHp`'],
     ['Shot / effect caps', `${b.limits.maxShots} / ${b.limits.maxEffects}`, '`limits`'],
   );
   table(out, ['Rule', 'Value', 'Data'], 'lll', rows);
 
-  out.push('Ace rank, from the share of the whole enemy army the ace destroyed itself:', '');
+  const im = b.impact;
+  out.push('Impacts (hit-stop holds the simulation; shake is in CSS pixels; flash and red edges are 0–1):', '');
+  const impactRow = (name: string, k: { freeze: number; shake: number; flash: number; hurt?: number }, when: string, key: string) => [
+    name,
+    when,
+    k.freeze > 0 ? sec(k.freeze) : '–',
+    k.shake > 0 ? n(k.shake) : '–',
+    k.flash > 0 ? n(k.flash) : '–',
+    k.hurt ? n(k.hurt) : '–',
+    `\`impact.${key}\``,
+  ];
+  table(out, ['Impact', 'When', 'Hit-stop', 'Shake', 'Flash', 'Red edges', 'Data'], 'll----l', [
+    impactRow('Ace hit', im.aceHit, `any hit on the ace, scaled by damage (full at ${pct(im.aceHit.fullShare)} of max HP); the ace jolts for ${sec(im.aceHit.react)}`, 'aceHit'),
+    impactRow('Big kill', im.bigKill, 'the ace destroys a Commander or semi-ace', 'bigKill'),
+    impactRow('Heavy hit', im.heavyHit, `one hit takes ${pct(im.heavyHit.minShare)} or more of the ace's max HP`, 'heavyHit'),
+    impactRow('Super release', im.release, 'super release starts', 'release'),
+    impactRow('Close dodge', im.dodge, "an attack passes through the ace's dash", 'dodge'),
+    impactRow('Saber slash', im.slash, "one of the ace's slashes connects", 'slash'),
+    impactRow('Ace destroyed', im.aceDeath, `then ${mul(im.aceDeath.slowScale)} speed for ${sec(im.aceDeath.slow)}`, 'aceDeath'),
+    impactRow('Blast', im.blast, `radius ${n(im.blast.minRadius)}+ within ${n(im.blast.range)} of the ace (fades with distance)`, 'blast'),
+    impactRow('Wide beam', im.beam, `a hostile line attack ${n(im.beam.minWidth)}+ wide within ${n(im.beam.range)} of the ace (fades with distance)`, 'beam'),
+  ]);
+  out.push(
+    `Red edges fade over ${sec(im.hurtTime)}. No hit-stop starts within ${sec(im.freezeGap)} after the last one ends, except the ace's destruction. One of the ace's hits of ${n(im.stagger.minDamage)}+ damage makes the unit judder for ${sec(im.stagger.time)}.`,
+    '',
+  );
+
+  const r = b.rating;
+  out.push(
+    `Rating (won sorties): ${n(r.pointsPerEnemy)} points per enemy × pace (par ${n(r.parSecondsPerEnemy)} s per enemy ÷ clear time, ${n(r.paceMin)}–${n(r.paceMax)}) × integrity (1 − ${n(r.damagePerMaxHp)} per max HP of damage taken, at least ${n(r.integrityMin)}) × allied line (1 + ${n(r.lineBonus)} × share of allies alive). Rank, from the score per enemy:`,
+    '',
+  );
   table(
     out,
-    ['Rank', 'Needs'],
+    ['Rank', 'Score per enemy'],
     'll',
-    b.ranks.map((r) => [r.letter, r.minShare > 0 ? `${pct(r.minShare)} or more` : 'anything less']),
+    r.ranks.map((k) => [k.letter, k.minScore > 0 ? `${n(k.minScore)} or more` : 'anything less']),
   );
+
+  const pr = b.praise;
+  out.push(
+    `Praise banners: every ${pr.killMilestone} ace kills; ${pr.streak.kills} kills within ${sec(pr.streak.window)} (then quiet for ${sec(pr.streak.cooldown)}); a super release that downs ${pr.releaseMinKills} or more.`,
+    '',
+  );
+  out.push(`Weapon medals (career kills with one weapon): ${catalog.loadout.medals.map((m) => `${m.name} ${m.kills}`).join(', ')}.`, '');
 
   const d = catalog.loadout.defaultLoadout;
   out.push(

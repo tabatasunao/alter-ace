@@ -9,11 +9,12 @@ export class UnitFactory {
   soldier(def: UnitClassDef, team: Team, x: number, y: number): Soldier {
     const r = this.world.random;
     const { ai, balance } = this.world.catalog.battle;
-    const weapon = this.world.catalog.unitWeapon(def.weapon);
+    const weapon = this.world.catalog.unitWeapon(team === ENEMY && def.enemyWeapon ? def.enemyWeapon : def.weapon);
+    const id = this.world.nextId();
     // Property order matters: it fixes the order of random draws, and so replays.
     return {
       kind: 'soldier',
-      id: this.world.nextId(),
+      id,
       def,
       weapon,
       action: null,
@@ -42,10 +43,15 @@ export class UnitFactory {
       hunter: team === ENEMY && (!!def.huntsAce || r.next() < balance.aceAggro),
       stalking: false,
       leader: null,
+      // Spread first pulses over one interval by id, so healers do not pulse in step.
+      healT: def.heal ? (def.heal.interval * ((id % 10) + 1)) / 10 : 0,
+      stagger: 0,
+      exposedT: 0,
+      exposedMul: 1,
     };
   }
 
-  decoy(tool: DecoyTool, team: Team, x: number, y: number): Decoy {
+  decoy(tool: DecoyTool, team: Team, x: number, y: number, hp = tool.hp, life = tool.life): Decoy {
     return {
       kind: 'decoy',
       id: this.world.nextId(),
@@ -54,14 +60,14 @@ export class UnitFactory {
       y,
       vx: 0,
       vy: 0,
-      hp: tool.hp,
-      maxHp: tool.hp,
+      hp,
+      maxHp: hp,
       size: tool.size,
       alive: true,
       cell: 0,
       flash: 0,
       stunT: 0,
-      life: tool.life,
+      life,
       pullRadius: tool.pullRadius,
     };
   }
@@ -69,7 +75,7 @@ export class UnitFactory {
   player(frame: FrameDef, armaments: readonly ArmamentDef[], x: number, y: number): Player {
     const slots: Slot[] = armaments.map((def) =>
       isWeapon(def)
-        ? { kind: 'weapon', def, ammo: def.mag ?? Infinity, reloadT: 0, reloadTotal: 1, cd: 0 }
+        ? { kind: 'weapon', def, ammo: def.mag ?? Infinity, reloadT: 0, reloadTotal: 1, cd: 0, spin: 0, sinceShot: Infinity }
         : { kind: 'tool', def, cd: 0, cdTotal: 1 },
     );
     return {
@@ -93,7 +99,11 @@ export class UnitFactory {
       facing: 0,
       iframes: 0,
       dashCd: 0,
-      releaseCd: 0,
+      dodgeArmed: false,
+      hurtT: 0,
+      hurtK: 0,
+      releaseCharge: 1,
+      release: null,
       dash: null,
       lunge: null,
       statuses: [],

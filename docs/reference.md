@@ -23,9 +23,9 @@ The frame is picked in the hangar. Multipliers below 1 are better (less time bet
 
 | Frame | Code | Type | Top speed | HP | Time between shots | Reload time | Tool recharge | Dash recharge |
 | --- | --- | --- | --: | --: | --: | --: | --: | --: |
-| Swift | ALTER-S | Speed type | 300 | 380 | ×1 | ×1 | ×1 | 1.4 s |
-| Quickdraw | ALTER-Q | Fast-loading type | 190 | 480 | ×0.8 | ×0.45 | ×0.7 | 3.2 s |
-| Vanguard | ALTER-V | Balance type | 245 | 440 | ×0.9 | ×0.72 | ×0.85 | 2.2 s |
+| Swift | ALTER-S | Speed type | 300 | 190 | ×1 | ×1 | ×1 | 1.4 s |
+| Quickdraw | ALTER-Q | Fast-loading type | 190 | 240 | ×0.8 | ×0.45 | ×0.7 | 3.2 s |
+| Vanguard | ALTER-V | Balance type | 245 | 220 | ×0.9 | ×0.72 | ×0.85 | 2.2 s |
 
 ## Ace weapons
 
@@ -35,26 +35,25 @@ a weapon with no magazine never reloads.
 
 | Weapon | Type | Behavior | Damage | Rounds/shot | Time between shots | Range | Magazine | Reload | Specials |
 | --- | --- | --- | --: | --: | --: | --: | --: | --: | --- |
-| Assault Rifle | Kinetic | `bullet` | 28 | 1 | 0.11 s | 400 | 40 | 1.4 s | pierces 2 |
-| Gatling Cannon | Kinetic | `bullet` | 20 | 1 | 0.045 s | 360 | 150 | 3.5 s | pierces 1 |
-| Scatter Cannon | Kinetic | `scatter` | 34 | 12 | 0.65 s | 310 | 8 | 2 s | spread ±11° |
-| Beam Rifle | Beam | `beam` | 70 | 1 | 0.55 s | 600 | 8 | 2.6 s | pierces 4; width 4.8; release burst in front 60° |
-| Railgun | Kinetic | `rail` | 280 | 1 | 1.3 s | 760 | 3 | 3.2 s | instant line; width 7.2; release burst in front 60° |
+| Assault Rifle | Kinetic | `bullet` | 28 | 1 | 0.11 s | 400 | 40 | 1.4 s | pierces 2; fires during a dash |
+| Gatling Cannon | Kinetic | `bullet` | 20 | 1 | 0.06 s | 360 | 150 | 3 s | pierces 1; spins up from ×0.35 to ×1.5 fire rate over 2 s; heat: overheats after 150 shots, cools 60/s after 0.4 s |
+| Beam Rifle | Beam | `beam` | 70 | 1 | 0.55 s | 600 | 8 | 2.6 s | pierces 4; width 4.8; time between shots ×0.6 at top speed; release burst in front 60° |
+| Railgun | Kinetic | `rail` | 280 | 1 | 1.3 s | 760 | 3 | 3.2 s | instant line; width 7.2; damage ×1.5 standing still to ×0.6 at top speed; release burst in front 60° |
 | Missile Pod | Blast | `missile` | 22 | 8 | 0.9 s | 600 | 20 | 4.4 s | splash 55 for 12; launches backwards; homes after 0.2 s |
-| Bazooka | Blast | `rocket` | 100 | 1 | 0.95 s | 440 | 4 | 2.6 s | splash 117 for 70 |
-| Plasma Mortar | Blast | `mortar` | – | 1 | 1.8 s | 580 | 2 | 4.2 s | lobbed; 0.9 s flight; splash 180 for 95 |
-| Beam Saber | Beam | `saber` | 120 | 1 | 0.7 s | 120 | none | – | lunge, slash 105 reach over 92°; 0.12 s invulnerable |
+| Breach Cannon | Kinetic | `breach` | 40 | 10 | 0.62 s | 280 | 8 | 2.2 s | 10 pellets, spread ±14°; every 4th shot a blast 160 wide for 150, knockback 500, recoil 280 |
+| Plasma Mortar | Blast | `mortar` | – | 1 | 1.8 s | 580 | 2 | 4.2 s | lobbed; 0.9 s flight; splash 180 for 105; stuns within 80 for 1 s, exposed ×1.5 |
+| Beam Saber | Beam | `saber` | 140 | 1 | 0.7 s | 165 | none | – | lunge, slash 150 reach over 126°; 0.12 s invulnerable |
 
 ## Tools
 
-A tool fires once when its key is pressed, then recharges (times are before the frame's multiplier).
+A tool fires once when its key is pressed, then recharges (times are before the frame's multiplier). During super release every tool hardpoint runs its release effect, whatever its recharge.
 
-| Tool | Effect | Recharge | Details |
-| --- | --- | --: | --- |
-| Repair Nanites | `repair` | 22 s | heals 35% of max HP over 3 s |
-| EMP Burst | `emp` | 16 s | stuns enemies within 300 for 3 s and clears their shots |
-| Decoy Beacon | `decoy` | 20 s | beacon with 600 HP for 8 s; pulls enemy fire within 650 |
-| Overboost | `overboost` | 18 s | 4 s: speed ×1.7, time between shots ×0.6, damage taken ×0.7 |
+| Tool | Effect | Recharge | Details | During super release |
+| --- | --- | --: | --- | --- |
+| Repair Nanites | `repair` | 22 s | heals 35% of max HP over 3 s | heals 35% of max HP over the release |
+| EMP Burst | `emp` | 16 s | stuns enemies within 300 for 3 s and clears their shots | a burst at the start and every 1 s |
+| Decoy Beacon | `decoy` | 20 s | beacon with 600 HP for 8 s; pulls enemy fire within 650 | an afterimage (200 HP, 2.5 s) at the start and every 0.75 s |
+| Overboost | `overboost` | 18 s | 4 s: speed ×1.7, time between shots ×0.6, damage taken ×0.7 | runs for the whole release |
 
 ## Aim modes
 
@@ -75,7 +74,7 @@ Every hit is multiplied by the target armor's value for the hit's damage type.
 
 | Armor | Kinetic | Beam | Blast | Worn by |
 | --- | --: | --: | --: | --- |
-| Standard | ×1 | ×1 | ×1 | Trooper, Beam Trooper, Striker, Lancer, Sentinel, Hornet, Marksman, Commander |
+| Standard | ×1 | ×1 | ×1 | Trooper, Beam Trooper, Striker, Lancer, Sentinel, Hornet, Marksman, Commander, Healer |
 | Heavy plate | ×0.5 | ×1.5 | ×1 | Bulwark, Circus |
 | Beam coating | ×1 | ×0.5 | ×1.5 | Prism, Duelist |
 | Reactive armor | ×1.5 | ×1 | ×0.5 | Breacher |
@@ -87,19 +86,20 @@ whatever the other shares leave.
 
 | Class | HP | Speed | Size | Weapon | Armor | Allied share | Enemy share | Traits |
 | --- | --: | --: | --: | --- | --- | --: | --: | --- |
-| Trooper | 75 | 95 | 10 | Assault rifle | Standard | rest (32%) | rest (31%) | takes ×1.5 from aces and semi-aces |
-| Beam Trooper | 75 | 95 | 10 | Beam rifle | Standard | 20% | 18% | takes ×1.5 from aces and semi-aces |
-| Striker | 42 | 165 | 8 | Beam pistol | Standard | 18% | 13% | – |
-| Bulwark | 320 | 55 | 16 | Heavy cannon | Heavy plate | 12% | 9% | – |
-| Lancer | 55 | 72 | 10 | Artillery | Standard | 8% | 5% | hunts the ace; backs off inside 330 |
-| Sentinel | 60 | 70 | 11 | Beam lance | Standard | 4% | 4.5% | hunts the ace; backs off inside 400 |
-| Hornet | 70 | 85 | 11 | Missile rack | Standard | 4% | 3.5% | hunts the ace; backs off inside 330 |
-| Prism | 120 | 85 | 13 | Beam cannon | Beam coating | – | 6% | – |
-| Breacher | 150 | 125 | 12 | Scattergun | Reactive armor | – | 7% | – |
-| Marksman | 520 | 150 | 14 | Long beam rifle | Standard | – | 0.5% | semi-ace; shield 1.5 s / 10 s recharge; hunts the ace; stalks the ace within 400; rallies 10–20 units; backs off inside 380 |
-| Circus | 560 | 140 | 14 | Micro-missile swarm | Heavy plate | – | 0.5% | semi-ace; shield 1.5 s / 10 s recharge; hunts the ace; stalks the ace within 400; rallies 10–20 units; backs off inside 330 |
-| Duelist | 600 | 185 | 13 | Beam saber | Beam coating | – | 0.5% | semi-ace; shield 1.5 s / 10 s recharge; hunts the ace; stalks the ace within 400; rallies 10–20 units |
-| Commander | 900 | 78 | 19 | Beam repeater | Standard | 2% | 1.5% | hunts the ace; aura: allies within 230 fire 30% faster |
+| Trooper | 75 | 100 | 10 | Assault rifle | Standard | rest (30%) | rest (29%) | takes ×1.5 from aces and semi-aces |
+| Beam Trooper | 75 | 100 | 10 | Beam rifle | Standard | 20% | 18% | takes ×1.5 from aces and semi-aces |
+| Striker | 42 | 173 | 8 | Beam pistol | Standard | 18% | 13% | – |
+| Bulwark | 320 | 58 | 16 | Heavy cannon | Heavy plate | 12% | 9% | – |
+| Lancer | 55 | 76 | 10 | Artillery | Standard | 8% | 5% | hunts the ace; backs off inside 330 |
+| Sentinel | 60 | 74 | 11 | Beam lance | Standard | 4% | 4.5% | hunts the ace; backs off inside 400 |
+| Hornet | 70 | 89 | 11 | Missile rack | Standard | 4% | 3.5% | hunts the ace; backs off inside 330 |
+| Prism | 120 | 89 | 13 | Beam cannon | Beam coating | – | 6% | – |
+| Breacher | 150 | 131 | 12 | Scattergun | Reactive armor | – | 7% | – |
+| Marksman | 520 | 158 | 14 | Long beam rifle | Standard | – | 0.5% | semi-ace; shield 1.5 s / 10 s recharge; hunts the ace; stalks the ace within 400; rallies 10–20 units; backs off inside 380 |
+| Circus | 560 | 147 | 14 | Micro-missile swarm | Heavy plate | – | 0.5% | semi-ace; shield 1.5 s / 10 s recharge; hunts the ace; stalks the ace within 400; rallies 10–20 units; backs off inside 330 |
+| Duelist | 600 | 194 | 13 | Beam saber | Beam coating | – | 0.5% | semi-ace; shield 1.5 s / 10 s recharge; hunts the ace; stalks the ace within 400; rallies 10–20 units |
+| Commander | 900 | 82 | 19 | Beam repeater (enemy: Mega-beam) | Standard | 2% | 1.5% | hunts the ace; aura: allies within 230 fire 30% faster |
+| Healer | 110 | 84 | 11 | Beam pistol | Standard | 2% | 2% | heals its army within 220 by 15% of max HP every 10 s (allied Healers: the ace too) |
 
 ## Unit weapons
 
@@ -110,17 +110,18 @@ ace by 0.5 (`aceDamageTaken`). Units close to about 82% of their range.
 | --- | --- | --- | --: | --: | --: | --- | --- |
 | Assault rifle | `shot` | Kinetic | 5 | 320 | 1.1 s | bullet | Trooper |
 | Beam rifle | `shot` | Beam | 4 | 380 | 1.6 s | beam | Beam Trooper |
-| Beam pistol | `shot` | Beam | 4 | 270 | 0.75 s | beam | Striker |
+| Beam pistol | `shot` | Beam | 4 | 270 | 0.75 s | beam | Striker, Healer |
 | Heavy cannon | `shot` | Kinetic | 13 | 300 | 1.7 s | shell | Bulwark |
 | Artillery | `shot` | Blast | 15 | 600 | 2.6 s | shell; splash 42 for 9 | Lancer |
-| Beam lance | `lance` | Beam | 24 | 840 | 10 s | charges 1.2 s, aim locks for the last 0.35 s; hits the whole line | Sentinel |
+| Beam lance | `lance` | Beam | 24 | 840 | 10 s | charges 1.2 s, aim locks for the last 0.35 s; hits the whole line within 5 | Sentinel |
 | Missile rack | `missile` | Blast | 4 | 720 | 9 s | salvo 2; splash 30 for 3 | Hornet |
 | Beam cannon | `shot` | Beam | 10 | 460 | 2.6 s | beam | Prism |
 | Scattergun | `shot` | Kinetic | 2 | 200 | 0.9 s | bullet; 4 pellets | Breacher |
-| Beam repeater | `shot` | Beam | 5 | 460 | 0.4 s | beam | Commander |
-| Long beam rifle | `shot` | Beam | 18 | 760 | 3 s | beam; pierces 2 | Marksman |
+| Beam repeater | `shot` | Beam | 5 | 460 | 0.4 s | beam | Commander (allied) |
+| Long beam rifle | `shot` | Beam | 18 | 798 | 3 s | beam; pierces 2 | Marksman |
 | Micro-missile swarm | `missile` | Blast | 3 | 650 | 7 s | salvo 16; splash 18 for 2; launches backwards; weaving swarm | Circus |
 | Beam saber | `saber` | Beam | 40 | 136 | 1.8 s | lunge, slash 60 reach over 115° | Duelist |
+| Mega-beam | `lance` | Beam | 100 | 900 | 10 s | charges 1.5 s, aim locks for the last 0.45 s; hits the whole line within 28; drawn as a heavy beam | Commander (enemy) |
 
 ## Armies
 
@@ -134,7 +135,7 @@ Unit counts per army (exact: counts are rounded shares, raised to the minimums; 
 
 | Class | Allies (100) | Enemies (300) | Enemies (450) | Enemies (600) |
 | --- | --: | --: | --: | --: |
-| Trooper | 32 | 90 | 138 | 186 |
+| Trooper | 30 | 84 | 129 | 174 |
 | Beam Trooper | 20 | 54 | 81 | 108 |
 | Striker | 18 | 39 | 59 | 78 |
 | Bulwark | 12 | 27 | 41 | 54 |
@@ -147,6 +148,7 @@ Unit counts per army (exact: counts are rounded shares, raised to the minimums; 
 | Circus | 0 | 2 | 2 | 3 |
 | Duelist | 0 | 2 | 2 | 3 |
 | Commander | 2 | 5 | 7 | 9 |
+| Healer | 2 | 6 | 9 | 12 |
 
 ## Battle rules
 
@@ -157,24 +159,49 @@ Unit counts per army (exact: counts are rounded shares, raised to the minimums; 
 | Chance an enemy unit hunts the ace | 35% | `balance.aceAggro` |
 | Range at which hunters find the ace | 800 | `balance.aceHuntRange` |
 | AI sight range | 900 | `ai.sightRange` |
+| Close-quarters fire at the ace | within 400: lead up to 1, spread down to ×0.3, fire rate up to ×2 (full at point blank) | `ai.closeAim` |
+| Ace body size | 22 | `player.size` |
+| Charged attacks at the ace | at most 2 at once, shots at least 0.6 s apart; a unit without a turn retries after 0.5 s | `ai.aceCharges` |
 | Ace movement model | `thruster` | `player.movement` |
 | Thrust to top speed | 0.8 s | `player.movement.thrustTime` |
 | Coasting drag | 0.6/s | `player.movement.drag` |
 | Dash | 240 in 0.16 s, 0.28 s invulnerable | `player.dash*` |
 | Regeneration | 3% of max HP per second after 4 s without damage | `player.regen*` |
-| Super release | 3 s of every weapon firing, 30 s recharge | `player.superRelease` |
-| Super release opening burst | 2.5 s worth of each weapon's fire at once | `player.superRelease.openingBurst` |
+| Super release | 3 s of every weapon firing and every tool's release effect; damage taken ×0.5 | `player.superRelease` |
+| Super release opening burst | 2.5 s worth of each weapon's fire at once, 0.6 s invulnerable | `player.superRelease.openingBurst`, `.openingIframes` |
+| Super release gauge | 1.2% per ace kill (×2.5 within 320), 1.6% per second; none while a release runs | `player.superRelease.charge` |
+| Close dodge | dash recharge refunded 100%, release gauge +15%; once per dash | `player.dodge` |
 | Critical HP warning | below 25% | `alerts.criticalHp` |
 | Shot / effect caps | 4000 / 1400 | `limits` |
 
-Ace rank, from the share of the whole enemy army the ace destroyed itself:
+Impacts (hit-stop holds the simulation; shake is in CSS pixels; flash and red edges are 0–1):
 
-| Rank | Needs |
+| Impact | When | Hit-stop | Shake | Flash | Red edges | Data |
+| --- | --- | --: | --: | --: | --: | --- |
+| Ace hit | any hit on the ace, scaled by damage (full at 6% of max HP); the ace jolts for 0.18 s | – | 5 | – | 0.7 | `impact.aceHit` |
+| Big kill | the ace destroys a Commander or semi-ace | 0.08 s | 7 | 0.35 | – | `impact.bigKill` |
+| Heavy hit | one hit takes 8% or more of the ace's max HP | 0.06 s | 10 | 0.5 | 1 | `impact.heavyHit` |
+| Super release | super release starts | 0.12 s | 14 | 0.6 | – | `impact.release` |
+| Close dodge | an attack passes through the ace's dash | 0.05 s | – | 0.3 | – | `impact.dodge` |
+| Saber slash | one of the ace's slashes connects | 0.05 s | 6 | – | – | `impact.slash` |
+| Ace destroyed | then ×0.3 speed for 1.2 s | 0.25 s | 18 | 0.8 | 1 | `impact.aceDeath` |
+| Blast | radius 100+ within 600 of the ace (fades with distance) | – | 3 | – | – | `impact.blast` |
+| Wide beam | a hostile line attack 20+ wide within 450 of the ace (fades with distance) | – | 9 | 0.2 | – | `impact.beam` |
+
+Red edges fade over 0.45 s. No hit-stop starts within 0.3 s after the last one ends, except the ace's destruction. One of the ace's hits of 60+ damage makes the unit judder for 0.07 s.
+
+Rating (won sorties): 10 points per enemy × pace (par 0.55 s per enemy ÷ clear time, 0.5–1.5) × integrity (1 − 0.08 per max HP of damage taken, at least 0.5) × allied line (1 + 0.3 × share of allies alive). Rank, from the score per enemy:
+
+| Rank | Score per enemy |
 | --- | --- |
-| S | 60% or more |
-| A | 45% or more |
-| B | 30% or more |
+| S | 10.5 or more |
+| A | 8.5 or more |
+| B | 6.5 or more |
 | C | anything less |
 
-Default loadout: Vanguard frame; Assault Rifle, Missile Pod, Bazooka, Repair Nanites;
+Praise banners: every 100 ace kills; 25 kills within 4 s (then quiet for 15 s); a super release that downs 10 or more.
+
+Weapon medals (career kills with one weapon): Bronze 100, Silver 500, Gold 2000.
+
+Default loadout: Vanguard frame; Assault Rifle, Missile Pod, Breach Cannon, Repair Nanites;
 Closest aim; 450 enemies.

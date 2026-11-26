@@ -48,7 +48,7 @@ src/
   render/             canvas renderer: layers/ (order) and painters/ (drawing)
   ui/                 DOM views: hangar, HUD, result, pause, banner
   input/              keyboard, touch joystick, wheel
-  game/               loadout model and storage, sortie rating
+  game/               loadout model and storage, sortie rating, career (bests, medals)
   style.css           styles and color tokens
 tests/                Vitest tests against the real data files
   helpers.ts          battle(), arena(), addSoldier()
@@ -108,11 +108,11 @@ Checks that run on every `npm test`:
 | Test file | Fails when |
 | --- | --- |
 | `tests/data.test.ts` | Data is invalid, names something unimplemented, or the default loadout is illegal |
-| `tests/balance.test.ts` | A weapon's damage output leaves 0.7×–1.5× of the median, or the exposure rules break ([architecture.md](docs/architecture.md#balance-test)) |
+| `tests/balance.test.ts` | A ranged weapon's damage output leaves 0.7×–1.5× of the median (melee: 0.7×–2.5×), or the exposure rules break ([architecture.md](docs/architecture.md#balance-test)) |
 | `tests/docs.test.ts` | `docs/reference.md` does not match the data, a relative link or `#anchor` in the docs is broken, or a page in `docs/` is not linked from `docs/README.md` |
 | `tests/simulation.test.ts` | Whole battles: deployment, reinforcements, victory, seeded replay |
 
-Other test files: `load`, `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `unitWeapons`, `semiAces`, `tools`, `aimModes`, `movement`, `loadout`, `ui`.
+Other test files: `load`, `heal`, `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `releaseTools`, `dodge`, `impact`, `praise`, `closeQuarters`, `aceCharges`, `mortarStun`, `weaponPersonality`, `unitWeapons`, `semiAces`, `tools`, `aimModes`, `movement`, `loadout`, `ui`.
 
 ## Debugging
 

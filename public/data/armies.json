@@ -1,6 +1,6 @@
 {
-  "allyMix": { "commander": 0.02, "bulwark": 0.12, "lancer": 0.08, "sentinel": 0.04, "hornet": 0.04, "striker": 0.18, "beamTrooper": 0.2 },
-  "enemyMix": { "commander": 0.015, "bulwark": 0.09, "lancer": 0.05, "sentinel": 0.045, "hornet": 0.035, "striker": 0.13, "prism": 0.06, "breacher": 0.07, "marksman": 0.005, "circus": 0.005, "duelist": 0.005, "beamTrooper": 0.18 },
+  "allyMix": { "commander": 0.02, "bulwark": 0.12, "lancer": 0.08, "sentinel": 0.04, "hornet": 0.04, "striker": 0.18, "healer": 0.02, "beamTrooper": 0.2 },
+  "enemyMix": { "commander": 0.015, "bulwark": 0.09, "lancer": 0.05, "sentinel": 0.045, "hornet": 0.035, "striker": 0.13, "prism": 0.06, "breacher": 0.07, "marksman": 0.005, "circus": 0.005, "duelist": 0.005, "healer": 0.02, "beamTrooper": 0.18 },
   "minimums": { "commander": 2 },
   "fillerClass": "trooper",
   "formation": { "spacing": 30, "jitter": 8, "columnsFactor": 0.5, "edgeMargin": 20 },

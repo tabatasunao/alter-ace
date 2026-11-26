@@ -7,8 +7,15 @@ describe('loadout', () => {
 
   it('falls back to the default for missing or junk saved data', () => {
     expect(sanitizeLoadout(null, catalog)).toEqual(catalog.loadout.defaultLoadout);
-    const cleaned = sanitizeLoadout({ frame: 'nope', slots: ['rifle', 'rifle', 'bfg', 'emp', 7], aim: 'cluster', enemies: 333 }, catalog);
+    const cleaned = sanitizeLoadout({ frame: 'nope', slots: ['rifle', 'rifle', 7, 'emp'], aim: 'cluster', enemies: 333 }, catalog);
     expect(cleaned).toEqual({ frame: 'vanguard', slots: ['rifle', 'emp'], aim: 'cluster', enemies: 350 });
+  });
+
+  it('refills the hardpoint of a weapon that no longer exists from the default loadout', () => {
+    const d = catalog.loadout.defaultLoadout.slots;
+    const cleaned = sanitizeLoadout({ frame: 'swift', slots: ['rifle', 'retiredGun', 'emp', 'decoy'], aim: 'closest', enemies: 450 }, catalog);
+    const firstUnused = d.find((id) => !['rifle', 'emp', 'decoy'].includes(id))!;
+    expect(cleaned.slots).toEqual(['rifle', 'emp', 'decoy', firstUnused]);
   });
 
   it('toggles items in and out and refuses a fifth', () => {
@@ -16,7 +23,7 @@ describe('loadout', () => {
     expect(editor.toggle('gatling')).toBe('full');
     expect(editor.toggle('rifle')).toBe('removed');
     expect(editor.toggle('gatling')).toBe('added');
-    expect(editor.value.slots).toEqual(['missile', 'bazooka', 'repair', 'gatling']);
+    expect(editor.value.slots).toEqual(['missile', 'breach', 'repair', 'gatling']);
   });
 
   it('requires every hardpoint filled and at least one weapon', () => {

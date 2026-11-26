@@ -1,8 +1,10 @@
 import { randomSeed, SeededRandom } from '../core/random';
 import { VariableStep } from '../core/timestep';
 import type { Catalog } from '../data/catalog';
+import { recordSortie, sanitizeCareer, type Career, type CareerStore, type SortieRecord } from '../game/career';
 import { LoadoutEditor, sanitizeLoadout } from '../game/loadout';
 import type { LoadoutStore } from '../game/loadoutStore';
+import { rateSortie } from '../game/rating';
 import { keyBindings, type CommandSink, type InputMode } from '../input/commands';
 import { bindWheelZoom, combineMoveInputs } from '../input/combine';
 import { KeyboardInput } from '../input/KeyboardInput';
@@ -11,10 +13,12 @@ import { CanvasRenderer } from '../render/CanvasRenderer';
 import { EffectLayer } from '../render/layers/EffectLayer';
 import { GridLayer } from '../render/layers/GridLayer';
 import { GroundLayer } from '../render/layers/GroundLayer';
+import { ImpactFlashLayer } from '../render/layers/ImpactFlashLayer';
 import { JoystickLayer } from '../render/layers/JoystickLayer';
 import { PlayerLayer } from '../render/layers/PlayerLayer';
 import { ShotLayer } from '../render/layers/ShotLayer';
 import { SightLineLayer } from '../render/layers/SightLineLayer';
+import { ThreatLayer } from '../render/layers/ThreatLayer';
 import { UnitLayer } from '../render/layers/UnitLayer';
 import { Minimap } from '../render/Minimap';
 import { readPalette } from '../render/palette';
@@ -35,6 +39,8 @@ import { GameLoop } from './GameLoop';
 export interface AppOptions {
   catalog: Catalog;
   store: LoadoutStore;
+  /** Best scores and weapon kills across sorties. */
+  career: CareerStore;
   /** Fixed battle seed (from ?seed=) for reproducible sorties; random when undefined. */
   seed?: number;
 }
@@ -50,8 +56,10 @@ export class App implements CommandSink {
   private sim: Simulation | null = null;
   private commands: PlayerCommands | null = null;
   private resultTimer = 0;
+  private career: Career;
 
   private readonly store: LoadoutStore;
+  private readonly careerStore: CareerStore;
   private readonly seed: number | undefined;
   private readonly renderer: CanvasRenderer;
   private readonly minimap: Minimap;
@@ -68,6 +76,8 @@ export class App implements CommandSink {
   constructor(options: AppOptions) {
     this.catalog = options.catalog;
     this.store = options.store;
+    this.careerStore = options.career;
+    this.career = sanitizeCareer(this.careerStore.load());
     this.seed = options.seed;
     this.editor = new LoadoutEditor(this.catalog, sanitizeLoadout(this.store.load(), this.catalog));
 
@@ -86,13 +96,13 @@ export class App implements CommandSink {
       canvas,
       palette,
       [new GridLayer(), new GroundLayer(), new UnitLayer(), new SightLineLayer(), new ShotLayer(), new EffectLayer(), new PlayerLayer()],
-      [new JoystickLayer(this.joystick)],
+      [new ImpactFlashLayer(), new ThreatLayer(), new JoystickLayer(this.joystick)],
     );
     this.minimap = new Minimap(byId('minimap'), palette, () => this.renderer.pixelRatio, () => this.renderer.viewport);
 
     this.hangar = new HangarView(
       byId('hangar'),
-      { catalog: this.catalog, editor: this.editor },
+      { catalog: this.catalog, editor: this.editor, career: () => this.career },
       () => this.store.save(this.editor.value),
       () => this.launch(),
     );
@@ -124,7 +134,7 @@ export class App implements CommandSink {
   setCatalog(catalog: Catalog): void {
     this.catalog = catalog;
     this.editor = new LoadoutEditor(catalog, this.editor.value);
-    this.hangar.setModel({ catalog, editor: this.editor });
+    this.hangar.setModel({ catalog, editor: this.editor, career: () => this.career });
     if (!this.world || this.world.isDemo) {
       this.hangar.render();
       this.startDemo();
@@ -207,20 +217,34 @@ export class App implements CommandSink {
     this.startDemo();
   }
 
-  private showResult(world: World): void {
+  private showResult(world: World, record: SortieRecord): void {
     this.hud.hide();
-    this.result.show(world);
+    this.result.show(world, record);
+  }
+
+  /** Adds a finished sortie to the career (weapon kills, best score) and saves it. */
+  private recordCareer(world: World): SortieRecord {
+    const rating = rateSortie(world);
+    const record = recordSortie(
+      this.career,
+      { enemies: world.stats.enemyTotal, killsBy: world.stats.killsBy, score: rating?.score ?? null },
+      this.catalog.loadout.medals,
+    );
+    this.career = record.career;
+    this.careerStore.save(record.career);
+    return record;
   }
 
   private startBattle(): World {
     const seed = this.seed ?? randomSeed();
     const world = createBattleWorld(this.catalog, new SeededRandom(seed), this.editor.value, this.renderer.viewport);
-    world.events.on('banner', ({ text, tone }) => this.banner.show(text, tone));
+    world.events.on('banner', ({ text, tone, minor }) => this.banner.show(text, tone, minor));
     world.events.on('slotDenied', ({ slot }) => this.hud.deny(slot));
     world.events.on('battleEnded', () => {
       this.resetInput();
+      const record = this.recordCareer(world);
       this.resultTimer = window.setTimeout(() => {
-        if (this.world === world) this.showResult(world);
+        if (this.world === world) this.showResult(world, record);
       }, this.catalog.battle.timing.resultDelay * 1000);
     });
     this.world = world;

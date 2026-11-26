@@ -1,6 +1,5 @@
 import { TAU } from '../../core/math';
-import type { ScreenLayer } from '../layers';
-import type { Palette } from '../palette';
+import type { ScreenFrame, ScreenLayer } from '../layers';
 
 /** What the joystick overlay needs to know; the touch input implements it. */
 export interface JoystickView {
@@ -19,7 +18,7 @@ const RADIUS = 56;
 export class JoystickLayer implements ScreenLayer {
   constructor(private readonly joystick: JoystickView) {}
 
-  draw(ctx: CanvasRenderingContext2D, palette: Palette): void {
+  draw({ ctx, palette }: ScreenFrame): void {
     const j = this.joystick;
     if (!j.active) return;
     ctx.globalAlpha = 0.55;

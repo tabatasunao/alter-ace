@@ -15,7 +15,7 @@ src/sim          headless simulation: World state + Systems + strategies      �
 src/render       canvas layers and painters (reads World, never changes it)
 src/ui           DOM views: hangar, HUD, result, pause, banner
 src/input        keyboard, touch joystick, wheel → CommandSink / MoveInput
-src/game         loadout model and storage, sortie rating (no DOM)
+src/game         loadout model and storage, sortie rating, career (bests, medals) (no DOM)
 src/app          App: composition root and screen flow; GameLoop
 src/main.ts      boot: load and validate data, start the App, data hot reload (dev)
 ```
@@ -25,6 +25,8 @@ Dependencies point downward only. `src/sim` does not import `render`, `ui`, `inp
 ## One frame
 
 `GameLoop` (requestAnimationFrame) → `TimeStepper.advance` → `Simulation.step(world, dt)` runs the systems in pipeline order → `CanvasRenderer.render(world)` runs the layers → `HudView.update(world)`.
+
+`Simulation.step` honors `world.impact`: during hit-stop it runs only systems with `duringFreeze` (`EffectSystem`, `ImpactSystem`, the camera systems); during slow motion it scales `dt`. Input commands arrive between steps, after `CleanupSystem` has compacted `world.units`, so `PlayerCommands` rebuilds the spatial grid before a command that queries it.
 
 `VariableStep` (one step per frame, `dt` capped at 0.05 s) implements `TimeStepper`.
 
@@ -38,24 +40,28 @@ Dependencies point downward only. `src/sim` does not import `render`, `ui`, `inp
 | 2 | `SeparationSystem` | Push overlapping units apart |
 | 3 | `CentroidSystem` | Average position of each army |
 | 4 | `AuraSystem` | Commander fire-rate aura |
-| 5 | `ShieldSystem` | Shield timers (the `shield` damage rule raises a shield on a hit) |
-| 6 | `PlayerStatusSystem` | Ace timers, statuses, regeneration |
-| 7 | `PlayerMovementSystem` | Steering, dash, saber lunge, walls |
-| 8 | `PlayerWeaponSystem` | Reloads, reticle, automatic fire, super release |
-| 9 | `StalkSystem` | Enemy semi-aces that find the ace start stalking and rally packs; packs disband when the leader dies |
-| 10 | `SoldierAISystem` | Target selection, approach / kite / strafe, leashes, firing |
-| 11 | `UnitActionSystem` | Step unit actions (lance charges, saber lunges) |
-| 12 | `DecoySystem` | Decoy lifetime |
-| 13 | `ProjectileSystem` | Move shots, resolve hits and splash |
-| 14 | `EffectSystem` | Age visual effects |
-| 15 | `BattleClockSystem` | Battle timer |
-| 16 | `ReinforcementSystem` | Enemy battalions from the east edge |
-| 17 | `AlertSystem` | One-time banners |
-| 18 | `VictorySystem` | Victory when no enemies remain |
-| 19 | `CleanupSystem` | Remove dead units |
-| 20 | `FollowCameraSystem` | Camera follows the ace |
+| 5 | `HealSystem` | Heal pulses (classes with `heal`) |
+| 6 | `ShieldSystem` | Shield timers (the `shield` damage rule raises a shield on a hit) |
+| 7 | `PlayerStatusSystem` | Ace timers, statuses, regeneration, close-dodge window |
+| 8 | `ReleaseSystem` | Super release gauge over time, tool release effects, release end |
+| 9 | `PlayerMovementSystem` | Steering, dash, saber lunge, walls |
+| 10 | `PlayerWeaponSystem` | Reloads, reticle, automatic fire (every weapon during super release) |
+| 11 | `StalkSystem` | Enemy semi-aces that find the ace start stalking and rally packs; packs disband when the leader dies |
+| 12 | `SoldierAISystem` | Target selection, approach / kite / strafe, leashes, firing |
+| 13 | `UnitActionSystem` | Step unit actions (lance charges, saber lunges) |
+| 14 | `DecoySystem` | Decoy lifetime |
+| 15 | `ProjectileSystem` | Move shots, resolve hits and splash |
+| 16 | `EffectSystem` | Age visual effects (also during hit-stop) |
+| 17 | `ImpactSystem` | Settle shake and flash, count down the hit-stop gap (also during hit-stop) |
+| 18 | `BattleClockSystem` | Battle timer |
+| 19 | `ReinforcementSystem` | Enemy battalions from the east edge |
+| 20 | `AlertSystem` | One-time banners |
+| 21 | `PraiseSystem` | Kill milestone and streak banners |
+| 22 | `VictorySystem` | Victory when no enemies remain |
+| 23 | `CleanupSystem` | Remove dead units |
+| 24 | `FollowCameraSystem` | Camera follows the ace (also during hit-stop) |
 
-`demoPipeline()` (hangar skirmish) runs the same systems except the ace systems (statuses, movement, weapons), `StalkSystem`, `BattleClockSystem`, `ReinforcementSystem`, `AlertSystem`, `VictorySystem` and `FollowCameraSystem`, and adds `DemoDirectorSystem` and `DemoCameraSystem`.
+`demoPipeline()` (hangar skirmish) runs the same systems except the ace systems (statuses, release, movement, weapons), `StalkSystem`, `ImpactSystem`, `BattleClockSystem`, `ReinforcementSystem`, `AlertSystem`, `PraiseSystem`, `VictorySystem` and `FollowCameraSystem`, and adds `DemoDirectorSystem` and `DemoCameraSystem`.
 
 ## Extension points
 
@@ -87,7 +93,8 @@ Other structural rules:
 - **One job per System.** State used by only one system lives in that system.
 - **`Combat` applies hits.** What a hit does is the damage rule list; what a death does is split into the wreck (`src/sim/deaths.ts`) and scoring.
 - **Team-agnostic attacks.** The ace's weapon code uses `P.team`, so the same attack code serves both sides.
-- **Small interfaces:** `System`, `MoveInput`, `CommandSink`, `WorldLayer`, `ScreenLayer`, `JoystickView`, `LoadoutStore`, `Random`, `TimeStepper`.
+- **Small interfaces:** `System`, `MoveInput`, `CommandSink`, `WorldLayer`, `ScreenLayer`, `JoystickView`, `LoadoutStore`, `CareerStore`, `Random`, `TimeStepper`.
+- **Impact.** Sim code calls `kick(world, def)` (`src/sim/impact.ts`) for a big moment; `CanvasRenderer` applies the shake to the world transform and `ImpactFlashLayer` draws the flash. Screen layers get a `ScreenFrame` (world, view, size, and a motion scale that drops when the viewer asks for reduced motion).
 - **Dependency inversion.** The sim depends on `Random`, `MoveInput` and `GameEvents`, not on `Math.random`, the keyboard or the DOM. `App` is the only composition root.
 - **Colors.** The sim assigns a semantic `Tone`; the renderer maps it to CSS tokens via `readPalette()`.
 
@@ -95,7 +102,7 @@ Other structural rules:
 
 ### A new weapon that reuses a behavior
 
-Add an entry to `public/data/weapons.json` with an existing `behavior` (`bullet`, `scatter`, `beam`, `rail`, `missile`, `rocket`, `mortar`, `saber`). No code.
+Add an entry to `public/data/weapons.json` with an existing `behavior` (`bullet`, `beam`, `rail`, `missile`, `breach`, `mortar`, `saber`). No code. The optional modifiers `fireWhileDashing`, `movingFireInterval`, `spin` and `heat` work with any behavior (PlayerWeaponSystem applies them).
 
 ### A new weapon behavior
 
@@ -119,7 +126,9 @@ For a new behavior:
 2. Implement `UnitWeaponBehavior` in `src/sim/ai/weapons/behaviors/`.
 3. Register it in `src/sim/ai/weapons/registry.ts`.
 
-The AI handles targeting, range and cooldown. A weapon that takes time sets `unit.action` to a `UnitAction` (see `LanceCharge`, `SaberLunge`): `step` runs each frame until it returns true, `holdsAI` says whether the AI waits, and an optional `sightLine` is drawn by `SightLineLayer`. A stun or death cancels the action.
+A unit can be thrown with `knockBack` (`src/sim/ai/knockback.ts`), a `UnitAction` that replaces its current one. `UnitActionSystem` keeps an action that a finishing one started (a lunge whose slash clashes ends in a knockback). Saber-meets-saber rules live in `src/sim/clash.ts`; a `UnitAction` with `blade: true` is a saber swing.
+
+The AI handles targeting, range and cooldown. `fire` may return `false` to hold fire; the AI then retries after `ai.aceCharges.retry` (the lance does this when it has no turn to charge at the ace, `src/sim/ai/aceCharges.ts`). A weapon that takes time sets `unit.action` to a `UnitAction` (see `LanceCharge`, `SaberLunge`): `step` runs each frame until it returns true, `holdsAI` says whether the AI waits, and an optional `sightLine` is drawn by `SightLineLayer`. A stun or death cancels the action.
 
 ### A new tool
 
@@ -128,6 +137,8 @@ The AI handles targeting, range and cooldown. A weapon that takes time sets `uni
 3. Register it in `src/sim/tools/registry.ts` and add it to `tools.json`.
 
 Recharge is handled by `useTool`. A buff is a `Status` added with `addStatus`: stat multipliers (`speed`, `fireInterval`, `damageTaken`), healing per second, and an optional ring. Movement, firing, damage, the ace's look and the HUD chips read statuses without new fields.
+
+Every tool effect also has `release`: `start(ctx, duration)` runs when super release starts, and an optional `step(ctx, from, to, duration)` runs each step of it (`releaseTicks` counts repeats at an interval). Add a `releaseDesc` for the hangar card and a column entry in `tests/docs/reference.ts` → `toolRelease`.
 
 ### A new damage modifier
 
@@ -163,10 +174,10 @@ Implement `MoveInput` for movement and call `CommandSink` methods for buttons. A
 
 ## Balance test
 
-`tests/balance/weaponBench.ts` flies the ace (bot pilot, one weapon) against an enemy formation drawn from the enemy mix. The ace takes a negligible fraction of damage, so the bench also measures how much fire each weapon draws. `tests/balance.test.ts` runs it on every `npm test` and fails if:
+`tests/balance/weaponBench.ts` flies the ace (bot pilot, one weapon) against an enemy formation drawn from the enemy mix. The ace takes a negligible fraction of damage, so the bench also measures how much fire each weapon draws. Both rates are measured until 90% of the formation's HP is destroyed, so a straggler the bot fails to chase down does not skew them. `tests/balance.test.ts` runs it on every `npm test` and fails if:
 
-- a weapon's damage output leaves 0.7×–1.5× of the median weapon;
-- the Beam Saber draws less than 1.75× the fire of the most exposed ranged weapon;
+- a ranged weapon's damage output leaves 0.7×–1.5× of the median weapon, or the Beam Saber's leaves 0.7×–2.5×;
+- the Beam Saber draws less than 1.2× the fire of the most exposed ranged weapon;
 - any ranged weapon draws no fire while kiting;
 - the median ranged weapon draws 150 or less incoming damage per minute.
 

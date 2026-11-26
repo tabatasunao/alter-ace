@@ -3,8 +3,13 @@
   "enemyCount": { "min": 300, "max": 600, "step": 50 },
   "defaultLoadout": {
     "frame": "vanguard",
-    "slots": ["rifle", "missile", "bazooka", "repair"],
+    "slots": ["rifle", "missile", "breach", "repair"],
     "aim": "closest",
     "enemies": 450
-  }
+  },
+  "medals": [
+    { "name": "Bronze", "kills": 100 },
+    { "name": "Silver", "kills": 500 },
+    { "name": "Gold", "kills": 2000 }
+  ]
 }
