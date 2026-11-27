@@ -145,3 +145,4 @@ Other test files: `load`, `heal`, `core`, `spatialGrid`, `combat`, `damage`, `we
 
 - `npm run build` writes `dist/` (`index.html`, hashed `assets/`, `data/`). The base path is relative, so the build works from any sub-path of a web server. It does not run from `file://`.
 - `.github/workflows/pages.yml` runs tests and build (which typechecks) on Node 22 and 24 for every pull request and push. A push to `main` also deploys the build to GitHub Pages.
+- Link previews: `index.html` carries Open Graph and Twitter card tags pointing at `public/og.jpg` (1200×630). Crawlers need absolute URLs, so those tags name `https://tabatasunao.github.io/alter-ace/`; they change if the site moves.
