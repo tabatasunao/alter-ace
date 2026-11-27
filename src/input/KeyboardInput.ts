@@ -1,17 +1,26 @@
-import type { Point } from '../core/math';
+import { clamp, type Point } from '../core/math';
 import type { MoveInput } from '../sim/input';
-import type { CommandSink, KeyBindings } from './commands';
+import type { CommandSink } from './commands';
+import type { KeyMap } from './keymap';
 
-const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
 const ZOOM_STEP = 1.15;
 
-/** Keyboard: held movement keys feed MoveInput; other keys become commands. */
+/** Whether a key event comes from a control that handles Enter and Space itself. */
+function onControl(target: EventTarget | null): boolean {
+  return typeof Element !== 'undefined' && target instanceof Element && !!target.closest('button, input, select, textarea, summary, a[href]');
+}
+
+/**
+ * Keyboard: held movement keys feed MoveInput; other keys become commands through the current
+ * key map. In the hangar, Enter or Space launches; after a sortie, any key shows the result, then
+ * Space or Enter sorties again and Esc returns to the hangar.
+ */
 export class KeyboardInput implements MoveInput {
   private readonly held = new Set<string>();
 
   constructor(
     private readonly sink: CommandSink,
-    private readonly bindings: () => KeyBindings,
+    private readonly keys: () => KeyMap,
     target: Window = window,
   ) {
     target.addEventListener('keydown', (e) => this.onKeyDown(e));
@@ -20,11 +29,17 @@ export class KeyboardInput implements MoveInput {
   }
 
   read(): Point {
-    const h = this.held;
-    return {
-      x: (h.has('d') || h.has('arrowright') ? 1 : 0) - (h.has('a') || h.has('arrowleft') ? 1 : 0),
-      y: (h.has('s') || h.has('arrowdown') ? 1 : 0) - (h.has('w') || h.has('arrowup') ? 1 : 0),
-    };
+    const map = this.keys();
+    let x = 0;
+    let y = 0;
+    for (const k of this.held) {
+      const m = map.move(k);
+      if (m) {
+        x += m[0];
+        y += m[1];
+      }
+    }
+    return { x: clamp(x, -1, 1), y: clamp(y, -1, 1) };
   }
 
   reset(): void {
@@ -33,43 +48,60 @@ export class KeyboardInput implements MoveInput {
 
   private onKeyDown(e: KeyboardEvent): void {
     const mode = this.sink.inputMode();
-    if (mode === 'menu') return;
+    if (mode === 'options') return;
     const k = e.key.toLowerCase();
-    if (MOVE_KEYS.has(k) || k === ' ') e.preventDefault();
-    if (mode === 'ended') return;
-    if (k === 'p' || k === 'escape') {
-      e.preventDefault();
-      this.sink.togglePause();
+    if (mode === 'menu') {
+      if ((k === 'enter' || k === ' ') && !e.repeat && !onControl(e.target)) {
+        e.preventDefault();
+        this.sink.confirm();
+      }
       return;
     }
+    if (mode === 'launch') {
+      // Any key skips the launch sequence.
+      if (!e.repeat) {
+        e.preventDefault();
+        this.sink.confirm();
+      }
+      return;
+    }
+    if (mode === 'ended') {
+      if (e.repeat) return;
+      e.preventDefault();
+      if (k === 'escape') this.sink.back();
+      else this.sink.confirm();
+      return;
+    }
+
+    const map = this.keys();
+    const action = map.action(k);
+    if (action || map.aim(k) >= 0) e.preventDefault();
+    if (action === 'pause') return this.sink.togglePause();
     if (mode === 'paused') return;
-    if (MOVE_KEYS.has(k)) {
+    if (map.move(k)) {
       this.held.add(k);
       return;
     }
     if (e.repeat) return;
 
-    const bindings = this.bindings();
-    const slot = bindings.slotForKey(k);
+    const slot = map.slot(k);
     if (slot >= 0) return this.sink.selectSlot(slot);
-    const aim = bindings.aimForKey(k);
+    const aim = map.aim(k);
     if (aim >= 0) return this.sink.setAimIndex(aim);
-    switch (k) {
-      case 'q':
+    switch (action) {
+      case 'aimPrev':
         return this.sink.cycleAim(-1);
-      case 'e':
+      case 'aimNext':
         return this.sink.cycleAim(1);
-      case 'shift':
+      case 'dash':
         return this.sink.dash();
-      case ' ':
+      case 'release':
         return this.sink.superRelease();
-      case 'r':
+      case 'reload':
         return this.sink.reload();
-      case '=':
-      case '+':
+      case 'zoomIn':
         return this.sink.zoomBy(ZOOM_STEP);
-      case '-':
-      case '_':
+      case 'zoomOut':
         return this.sink.zoomBy(1 / ZOOM_STEP);
     }
   }

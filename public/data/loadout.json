@@ -2,8 +2,9 @@
   "slots": 4,
   "enemyCount": { "min": 300, "max": 600, "step": 50 },
   "defaultLoadout": {
-    "frame": "vanguard",
-    "slots": ["rifle", "missile", "breach", "repair"],
+    "name": "ALTER",
+    "build": { "speed": 5, "hp": 5, "reload": 5, "fireRate": 5, "dash": 5 },
+    "slots": ["bazooka", "rail", "sniper", "missile"],
     "aim": "closest",
     "enemies": 450
   },

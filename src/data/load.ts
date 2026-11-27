@@ -7,7 +7,6 @@ export const DATA_FILES = [
   'frames',
   'damage',
   'weapons',
-  'tools',
   'aimModes',
   'unitWeapons',
   'units',

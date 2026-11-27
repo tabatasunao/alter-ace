@@ -136,14 +136,13 @@
       "rank": 4,
       "armor": "standard",
       "kiteDistance": 380,
-      "huntsAce": true,
-      "nearAce": 400,
-      "rally": { "min": 10, "max": 20, "radius": 600, "follow": 220 },
+      "holdLine": { "depth": 260, "band": 110 },
+      "aceFirst": true,
       "shield": { "duration": 1.5, "cooldown": 10 },
       "semiAce": true,
       "formationOffset": -80,
-      "killBanner": "Enemy semi-ace down: Marksman",
-      "blurb": "Semi-ace. A long beam rifle that outranges most of the field and pierces the line. Enemy army only."
+      "killBanner": "Marksman down",
+      "blurb": "Semi-ace. Stays behind its front line with a long beam rifle that outranges most of the field and pierces the line. Shoots the ace whenever it is in range, and shreds allied units otherwise. Enemy army only."
     },
     {
       "id": "circus",
@@ -155,15 +154,14 @@
       "weapon": "microMissiles",
       "rank": 4,
       "armor": "plate",
-      "kiteDistance": 330,
-      "huntsAce": true,
-      "nearAce": 400,
-      "rally": { "min": 10, "max": 20, "radius": 600, "follow": 220 },
+      "kiteDistance": 200,
+      "holdLine": { "depth": 0, "band": 60 },
+      "aceFirst": true,
       "shield": { "duration": 1.5, "cooldown": 10 },
       "semiAce": true,
       "formationOffset": -50,
-      "killBanner": "Enemy semi-ace down: Circus",
-      "blurb": "Semi-ace. Fills the sky with weaving micro-missiles. Dash through the swarm. Enemy army only."
+      "killBanner": "Circus down",
+      "blurb": "Semi-ace. Holds the front line and fills the sky with weaving micro-missiles that go for the ace first. Close in, each turns once toward where its target is heading, then flies straight: change course or dash. Enemy army only."
     },
     {
       "id": "duelist",
@@ -181,13 +179,14 @@
       "shield": { "duration": 1.5, "cooldown": 10 },
       "semiAce": true,
       "formationOffset": 60,
-      "killBanner": "Enemy semi-ace down: Duelist",
-      "blurb": "Semi-ace. Closes fast, lunges and cuts with a beam saber. Enemy army only."
+      "killBanner": "Duelist down",
+      "blurb": "Semi-ace. Rallies a pack and hunts the ace. Lunges and cuts with a beam saber, dash-strikes from mid-range along a locked aim line, and hops back after every cut. Enemy army only."
     },
     {
       "id": "commander",
       "name": "Commander",
       "shape": "nested",
+      "enemyShape": "pentagon",
       "size": 19,
       "hp": 900,
       "speed": 82,

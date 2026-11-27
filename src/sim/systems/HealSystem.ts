@@ -19,7 +19,7 @@ export class HealSystem implements System {
       const { interval, radius, amount } = u.def.heal;
       u.healT += interval;
       world.grid.eachNear(u.x, u.y, radius, (v) => {
-        if (v.team !== u.team || !v.alive || v.kind === 'decoy') return;
+        if (v.team !== u.team || !v.alive) return;
         if (Math.hypot(v.x - u.x, v.y - u.y) > radius + v.size * 0.5) return;
         v.hp = Math.min(v.maxHp, v.hp + v.maxHp * amount);
       });

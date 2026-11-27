@@ -1,5 +1,6 @@
 import type { Point } from '../core/math';
-import type { FrameDef, StunSpec, ToolDef, UnitClassDef, UnitWeaponDef, WeaponDef } from '../data/types';
+import type { FrameDef, Knock, StunSpec, UnitClassDef, UnitWeaponDef, WeaponDef } from '../data/types';
+import type { Message } from './messages';
 
 export type Team = 0 | 1;
 export const ALLY: Team = 0;
@@ -17,6 +18,8 @@ export interface Hit {
   readonly dtype: string | null;
   /** Fired by a semi-ace: counts like the ace's own hits against a class's `aceHitMul`. */
   readonly semiAce?: boolean;
+  /** Extra multiplier against AI units (a unit weapon's `armyMul`). */
+  readonly armyMul?: number;
 }
 
 // ---------- Units ----------
@@ -84,6 +87,8 @@ export interface Soldier extends UnitBase {
   labelAt: number;
   /** Time until the next shot. */
   cd: number;
+  /** Cooldown of the unit weapon's secondary attack (a saber's dash strike). */
+  skillCd: number;
   /** Time until the next target pick. */
   retarget: number;
   target: Unit | null;
@@ -99,20 +104,12 @@ export interface Soldier extends UnitBase {
   healT: number;
   /** Judder time left after a heavy hit from the ace (visual only). */
   stagger: number;
-  /** Time left exposed (after a Plasma Mortar stun): hits from the ace's side deal × `exposedMul`. */
+  /** Time left exposed (after a `mortar` stun): hits from the ace's side deal × `exposedMul`. */
   exposedT: number;
   exposedMul: number;
 }
 
-/** The ace's Decoy Beacon: a stationary allied unit that pulls enemy fire. */
-export interface Decoy extends UnitBase {
-  readonly kind: 'decoy';
-  life: number;
-  readonly pullRadius: number;
-}
-
 export interface WeaponSlot {
-  readonly kind: 'weapon';
   readonly def: WeaponDef;
   /** Rounds left; Infinity for unlimited weapons. */
   ammo: number;
@@ -120,20 +117,10 @@ export interface WeaponSlot {
   reloadTotal: number;
   /** Time until the next shot. */
   cd: number;
-  /** Spin-up, 0–1 (weapons with `spin`). */
-  spin: number;
   /** Seconds since this hardpoint last fired. */
   sinceShot: number;
 }
 
-export interface ToolSlot {
-  readonly kind: 'tool';
-  readonly def: ToolDef;
-  cd: number;
-  cdTotal: number;
-}
-
-export type Slot = WeaponSlot | ToolSlot;
 
 /** A timed straight-line move (dash or saber lunge). */
 export interface Motion {
@@ -150,16 +137,12 @@ export interface Lunge extends Motion {
 /** Stats a status can scale (multipliers; 1 = unchanged). `fireInterval` < 1 fires faster. */
 export type StatusStat = 'speed' | 'fireInterval' | 'damageTaken';
 
-/** A timed effect on the ace from a tool (Overboost, Repair Nanites). See src/sim/statuses.ts. */
+/** A timed effect on the ace (Full Arms). See src/sim/statuses.ts. */
 export interface Status {
-  /** The tool that gave it; using that tool again replaces it. */
+  /** Adding a status with the same id replaces it. */
   readonly id: string;
-  /** Shown on the HUD. */
-  readonly label: string;
   remaining: number;
   readonly mods: Partial<Record<StatusStat, number>>;
-  /** HP restored per second. */
-  readonly heal: number;
   /** Shown as a ring around the ace. */
   readonly ring: boolean;
   /** While it runs, every weapon hardpoint fires, not just the active one (super release). */
@@ -179,7 +162,7 @@ export interface ReleaseRun {
 export interface Player extends UnitBase {
   readonly kind: 'player';
   readonly frame: FrameDef;
-  readonly slots: Slot[];
+  readonly slots: WeaponSlot[];
   /** Index of the active weapon slot. */
   active: number;
   facing: number;
@@ -196,7 +179,9 @@ export interface Player extends UnitBase {
   release: ReleaseRun | null;
   dash: Motion | null;
   lunge: Lunge | null;
-  /** Timed effects from tools, in the order they were applied. */
+  /** A short shove back from a Shotgun shot, on top of other movement. */
+  jolt: Motion | null;
+  /** Timed effects, in the order they were applied. */
   statuses: Status[];
   /** Battle time of the last hit taken (drives regeneration). */
   lastHit: number;
@@ -205,7 +190,7 @@ export interface Player extends UnitBase {
   input: Point;
 }
 
-export type Unit = Soldier | Decoy | Player;
+export type Unit = Soldier | Player;
 
 // ---------- Projectiles ----------
 
@@ -219,6 +204,12 @@ export interface Homing {
   armAt?: number;
   /** On losing its target, picks a random hostile nearby instead of the nearest, so a salvo fans out. */
   spread?: boolean;
+  /** A unit to go for first: the missile switches to it (until its terminal turn) once it is within the retarget radius. */
+  prefer?: Unit | null;
+  /** Terminal correction: within `range` of the target, a hard turn for `time` seconds (aimed ahead by `lead`), then straight flight. */
+  terminal?: { range: number; turnRate: number; time: number; lead: number };
+  /** Time left of this missile's terminal turn: unset until it starts; at 0 the missile flies straight. */
+  terminalLeft?: number;
 }
 
 interface ProjectileBase extends Hit {
@@ -245,6 +236,8 @@ export interface FlyingShot extends ProjectileBase {
   readonly homing: Homing | null;
   target: Unit | null;
   readonly maxSpeed: number;
+  /** Knocks back an enemy ALTER it hits (Shotgun pellets). */
+  readonly knock: Knock | null;
 }
 
 /** A lobbed shell that lands at a fixed point after a fixed time. `x`, `y` follow its ground point. */
@@ -254,10 +247,15 @@ export interface LobbedShot extends ProjectileBase {
   readonly stun?: StunSpec;
   readonly sx: number;
   readonly sy: number;
-  readonly tx: number;
-  readonly ty: number;
+  /** Landing point; it moves toward `target` (at up to `track` per second) while the shell flies. */
+  tx: number;
+  ty: number;
   t: number;
   readonly flight: number;
+  readonly target: Unit | null;
+  readonly track: number;
+  /** Share of the target's motion over the remaining flight to aim ahead by. */
+  readonly lead: number;
 }
 
 export type Projectile = FlyingShot | LobbedShot;
@@ -268,7 +266,7 @@ export type ShotOfKind<K extends ProjectileKind> = K extends LobbedShot['kind'] 
 // ---------- Visual effects ----------
 
 /** Semantic color; the renderer maps it to the palette. `semiAce` is the enemy semi-aces' color. */
-export type Tone = 'ally' | 'enemy' | 'semiAce' | 'ace' | 'accent' | 'tool' | 'danger';
+export type Tone = 'ally' | 'enemy' | 'semiAce' | 'ace' | 'accent' | 'danger' | 'release';
 
 interface EffectBase {
   x: number;
@@ -296,14 +294,26 @@ export interface SparkEffect extends EffectBase {
   readonly tone: Tone;
 }
 
-/** An instant beam line (Railgun, Beam lance). */
-export interface RailEffect extends EffectBase {
-  readonly type: 'rail';
+/** An instant beam's discharge as a fading line (Beam lance). */
+export interface LineEffect extends EffectBase {
+  readonly type: 'line';
   readonly x2: number;
   readonly y2: number;
   readonly tone: Tone;
   /** Peak line width. */
   readonly width: number;
+}
+
+/** A Railgun slug: a bright dart racing down the line, leaving a fading wake. */
+export interface SlugEffect extends EffectBase {
+  readonly type: 'slug';
+  readonly x2: number;
+  readonly y2: number;
+  readonly tone: Tone;
+  /** Wake width, scaled by the shot's strength. */
+  readonly width: number;
+  /** A full-strength shot (steady aim): coiled discharge along the wake and a shock ring at the muzzle. */
+  readonly full: boolean;
 }
 
 /** A heavy beam's discharge (the mega-beam): a white-hot core in layers of glow, with a muzzle flare. */
@@ -356,7 +366,8 @@ export interface SmokeEffect extends EffectBase {
 /** A short word over a spot (DODGE, a release's kill count). */
 export interface CalloutEffect extends EffectBase {
   readonly type: 'callout';
-  readonly text: string;
+  /** What it says, translated by the renderer. */
+  readonly msg: Message;
   readonly tone: Tone;
   /** Font size in world units (like hit labels). */
   readonly size: number;
@@ -379,7 +390,8 @@ export type Effect =
   | BoomEffect
   | DebrisEffect
   | SparkEffect
-  | RailEffect
+  | LineEffect
+  | SlugEffect
   | HeavyBeamEffect
   | SlashEffect
   | EmpEffect
@@ -407,8 +419,9 @@ export function aceHit(w: { readonly id: string; readonly damageType: string }):
 }
 
 /** A hit from an AI unit's weapon. */
-export function armyHit(u: Soldier, w: { readonly damageType: string }): Hit {
-  return { src: 'army', wid: null, dtype: w.damageType, semiAce: u.def.semiAce === true };
+export function armyHit(u: Soldier, w: { readonly damageType: string; readonly armyMul?: number }): Hit {
+  const hit: Hit = { src: 'army', wid: null, dtype: w.damageType, semiAce: u.def.semiAce === true };
+  return w.armyMul ? { ...hit, armyMul: w.armyMul } : hit;
 }
 
 /** Whether a hit can land on the unit at all (the ace dodges everything while invulnerable). */

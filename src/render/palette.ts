@@ -11,7 +11,8 @@ export interface Palette {
   readonly semiAce: string;
   readonly accent: string;
   readonly ace: string;
-  readonly tool: string;
+  /** Super release: its gauge, ring, chip and callouts. */
+  readonly release: string;
   readonly emp: string;
   readonly danger: string;
   readonly muted: string;
@@ -28,6 +29,12 @@ export interface Palette {
   aura(tone: Tone): string;
   /** A damage type's color (CSS token `--<id>`, as on the hangar's type badges); accent if unknown. */
   damageType(id: string | null): string;
+}
+
+/** The palette with tone `from` drawn as tone `to` (its full, dim and aura shades); everything else unchanged. */
+export function recolorTone(palette: Palette, from: Tone, to: Tone): Palette {
+  const swap = (t: Tone) => (t === from ? to : t);
+  return { ...palette, tone: (t) => palette.tone(swap(t)), dim: (t) => palette.dim(swap(t)), aura: (t) => palette.aura(swap(t)) };
 }
 
 export function withAlpha(hex: string, alpha: number): string {
@@ -50,7 +57,7 @@ export function readPalette(root: Element = document.documentElement): Palette {
     semiAce: token('--semi-ace'),
     accent: token('--accent'),
     ace: token('--ace'),
-    tool: token('--tool'),
+    release: token('--release'),
     emp: token('--emp'),
     danger: token('--danger'),
     muted: token('--muted'),
@@ -61,8 +68,8 @@ export function readPalette(root: Element = document.documentElement): Palette {
     semiAce: base.semiAce,
     ace: base.ace,
     accent: base.accent,
-    tool: base.tool,
     danger: base.danger,
+    release: base.release,
   };
   const typeColors = new Map<string, string>();
   const shade = (alpha: number) => Object.fromEntries(Object.entries(tones).map(([t, c]) => [t, withAlpha(c, alpha)])) as Record<Tone, string>;
@@ -75,7 +82,7 @@ export function readPalette(root: Element = document.documentElement): Palette {
     aceShot: withAlpha(base.accent, 0.95),
     ring: withAlpha(base.accent, 0.24),
     aimLine: withAlpha(base.accent, 0.2),
-    fontDisplay: '"Chakra Petch", "Segoe UI", sans-serif',
+    fontDisplay: styles.getPropertyValue('--font-display').trim() || 'monospace',
     tone: (t) => tones[t],
     dim: (t) => dims[t],
     aura: (t) => auras[t],

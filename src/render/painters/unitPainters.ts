@@ -1,5 +1,5 @@
 import { TAU } from '../../core/math';
-import { ALLY, unitTone, type Decoy, type Soldier } from '../../sim/entities';
+import { ALLY, ENEMY, unitTone, type Soldier } from '../../sim/entities';
 import type { Palette } from '../palette';
 
 /**
@@ -79,11 +79,11 @@ const nested: UnitPainter = {
   },
 };
 
-/** Hexagon path centered on (x, y). */
-function hexPath(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+/** A regular polygon path centered on (x, y), its first corner at angle `rotation`. */
+function polygonPath(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, sides: number, rotation = 0): void {
   ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    const a = (i * TAU) / 6;
+  for (let i = 0; i < sides; i++) {
+    const a = rotation + (i * TAU) / sides;
     const px = x + Math.cos(a) * r;
     const py = y + Math.sin(a) * r;
     if (i === 0) ctx.moveTo(px, py);
@@ -96,13 +96,13 @@ function hexPath(ctx: CanvasRenderingContext2D, x: number, y: number, r: number)
 const hex: UnitPainter = {
   paint(ctx, u, color, palette) {
     const r = u.size * 0.6;
-    hexPath(ctx, u.x, u.y, r);
+    polygonPath(ctx, u.x, u.y, r, 6);
     ctx.fillStyle = palette.dim(unitTone(u));
     ctx.fill();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.stroke();
-    hexPath(ctx, u.x, u.y, r * 0.38);
+    polygonPath(ctx, u.x, u.y, r * 0.38, 6);
     ctx.fillStyle = color;
     ctx.fill();
   },
@@ -251,6 +251,29 @@ const blade: UnitPainter = {
   },
 };
 
+/** Nested pentagons with a bright core (enemy Commander). */
+const pentagon: UnitPainter = {
+  paint(ctx, u, color, palette) {
+    const r = u.size * 0.68;
+    // A point-up pentagon's center of area sits below its circumcenter: shift it to look centered.
+    const cy = u.y + r * 0.1;
+    polygonPath(ctx, u.x, cy, r, 5, -Math.PI / 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    polygonPath(ctx, u.x, cy, r * 0.52, 5, -Math.PI / 2);
+    ctx.fillStyle = palette.field;
+    ctx.fill();
+    polygonPath(ctx, u.x, cy, r * 0.22, 5, -Math.PI / 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  },
+};
+
+/** The look a unit is drawn with: its class's `enemyShape` in the enemy army, else its `shape`. */
+export function unitShape(u: Soldier): string {
+  return u.team === ENEMY && u.def.enemyShape ? u.def.enemyShape : u.def.shape;
+}
+
 export const UNIT_PAINTERS: Readonly<Record<string, UnitPainter>> = {
   square,
   frame,
@@ -266,27 +289,6 @@ export const UNIT_PAINTERS: Readonly<Record<string, UnitPainter>> = {
   spear,
   star,
   blade,
+  pentagon,
 };
 
-/** The decoy beacon: blinking crossed box with a pulsing ring. */
-export function paintDecoy(ctx: CanvasRenderingContext2D, d: Decoy, palette: Palette, time: number): void {
-  const s = d.size;
-  const h = s / 2;
-  const { x, y } = d;
-  ctx.strokeStyle = palette.tool;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x - h, y - h, s, s);
-  if (((time * 6) | 0) % 2 === 0) {
-    ctx.beginPath();
-    ctx.moveTo(x - h, y - h);
-    ctx.lineTo(x + h, y + h);
-    ctx.moveTo(x + h, y - h);
-    ctx.lineTo(x - h, y + h);
-    ctx.stroke();
-  }
-  ctx.beginPath();
-  ctx.arc(x, y, 30 + ((time * 40) % 40), 0, TAU);
-  ctx.globalAlpha = 0.4;
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-}

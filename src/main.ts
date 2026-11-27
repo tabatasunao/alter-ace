@@ -3,12 +3,19 @@ import type { Catalog } from './data/catalog';
 import { loadCatalog, onDataFileChanged } from './data/load';
 import { LocalStorageCareerStore } from './game/career';
 import { LocalStorageLoadoutStore } from './game/loadoutStore';
+import { LocalStorageSettingsStore } from './game/settings';
 import { findMissingPainters } from './render/registryCheck';
 import { findMissingSimImplementations } from './sim/registryCheck';
+// CJK fonts, split into character slices the browser loads only when a page needs them.
+import '@fontsource-variable/m-plus-1-code/wght.css';
+import '@fontsource-variable/noto-sans-sc/wght.css';
+import '@fontsource/nanum-gothic-coding/korean-400.css';
+import '@fontsource/nanum-gothic-coding/korean-700.css';
 import './style.css';
 
 const LOADOUT_KEY = 'alter-ace-loadout';
 const CAREER_KEY = 'alter-ace-career';
+const SETTINGS_KEY = 'alter-ace-settings';
 
 /** Loads and checks data, including that every behavior/effect/strategy/shape it names exists in code. */
 async function loadCheckedCatalog(): Promise<Catalog> {
@@ -28,6 +35,7 @@ async function boot(): Promise<void> {
     catalog: await loadCheckedCatalog(),
     store: new LocalStorageLoadoutStore(LOADOUT_KEY),
     career: new LocalStorageCareerStore(CAREER_KEY),
+    settings: new LocalStorageSettingsStore(SETTINGS_KEY),
     seed: seedFromUrl(),
   });
   app.start();

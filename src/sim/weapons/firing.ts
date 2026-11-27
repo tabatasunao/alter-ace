@@ -24,7 +24,6 @@ export function fireWeapon(world: World, P: Player, slot: WeaponSlot): boolean {
  */
 export function burstAll(world: World, P: Player, seconds: number): void {
   for (const slot of P.slots) {
-    if (slot.kind !== 'weapon') continue;
     const behavior = behaviorFor(slot.def);
     if (!behavior.burst) continue;
     const perSecond = (behavior.roundsPerShot?.(slot.def) ?? 1) / (slot.def.interval * P.frame.rateMul);

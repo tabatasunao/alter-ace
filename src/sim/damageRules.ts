@@ -10,7 +10,7 @@ import type { World } from './World';
  */
 export type DamageRule<U extends Unit = Unit> = (u: U, amount: number, hit: Hit, world: World) => number | null;
 
-/** The ace has no armor class: only the global scale and its statuses (Overboost) apply. */
+/** The ace has no armor class: only the global scale and its statuses (Full Arms) apply. */
 const aceScale: DamageRule<Player> = (u, amount, _hit, world) =>
   amount * (world.catalog.battle.balance.aceDamageTaken * statMul(u, 'damageTaken'));
 
@@ -73,9 +73,9 @@ const shield: DamageRule<Soldier> = (u, amount, hit, world) => {
   return null;
 };
 
-/** Hits from AI units are scaled by `unitVsUnit`; the ace's hits are not. */
+/** Hits from AI units on AI units are scaled by `unitVsUnit` (and the weapon's `armyMul`); the ace's hits are not. */
 const armySoftening: DamageRule = (_u, amount, hit, world) =>
-  hit.src === 'player' ? amount : amount * world.catalog.battle.balance.unitVsUnit;
+  hit.src === 'player' ? amount : amount * world.catalog.battle.balance.unitVsUnit * (hit.armyMul ?? 1);
 
 /** Normal ALTERs fold faster to aces: the player's hits and semi-aces' hits. */
 const aceVulnerability: DamageRule<Soldier> = (u, amount, hit) =>
@@ -89,7 +89,7 @@ const armor: DamageRule<Soldier> = (u, amount, hit, world) => {
   return amount * m;
 };
 
-/** An exposed unit (stunned by a Plasma Mortar) takes × `exposedMul` from the ace's side, marked EXPOSED on the ace's hits. */
+/** An exposed unit (stunned by a `mortar` shell) takes × `exposedMul` from the ace's side, marked EXPOSED on the ace's hits. */
 const exposed: DamageRule<Soldier> = (u, amount, hit, world) => {
   if (u.exposedT <= 0) return amount;
   markAceHit(world, u, hit, 'exposed');
@@ -109,5 +109,4 @@ type RuleTable = { readonly [K in Unit['kind']]: readonly DamageRule<Extract<Uni
 export const DAMAGE_RULES: RuleTable = {
   player: [aceScale, recordAceHit, aceHitReaction, heavyHitImpact],
   soldier: [shield, armySoftening, aceVulnerability, armor, exposed, stagger],
-  decoy: [armySoftening],
 };

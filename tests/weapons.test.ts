@@ -7,14 +7,14 @@ import { PlayerMovementSystem } from '../src/sim/systems/PlayerMovementSystem';
 import { PlayerWeaponSystem } from '../src/sim/systems/PlayerWeaponSystem';
 import { ProjectileSystem } from '../src/sim/systems/ProjectileSystem';
 import { fireWeapon } from '../src/sim/weapons/firing';
-import { addSoldier, arena, loadTestCatalog } from './helpers';
+import { addSoldier, arena, loadFixtureCatalog, presetBuild } from './helpers';
 
 describe('weapons', () => {
-  const catalog = loadTestCatalog();
+  const catalog = loadFixtureCatalog();
 
   it('every weapon in the data fires at a target in range', () => {
     for (const weapon of catalog.weapons) {
-      const world = arena(catalog, { slots: [weapon.id, 'repair', 'emp', 'decoy'] });
+      const world = arena(catalog, { slots: [weapon.id] });
       const P = world.player!;
       addSoldier(world, 'trooper', ENEMY, P.x + Math.min(100, weapon.range * 0.5), P.y);
       const slot = P.slots[0] as WeaponSlot;
@@ -33,7 +33,7 @@ describe('weapons', () => {
   });
 
   it('Railgun hits everything on its line and nothing beside it', () => {
-    const world = arena(catalog, { slots: ['rail', 'repair', 'emp', 'decoy'] });
+    const world = arena(catalog, { slots: ['rail'] });
     const P = world.player!;
     const line = [100, 300, 600].map((dx) => addSoldier(world, 'trooper', ENEMY, P.x + dx, P.y));
     const beside = addSoldier(world, 'trooper', ENEMY, P.x + 300, P.y + 80);
@@ -44,10 +44,10 @@ describe('weapons', () => {
     expect(slot.ammo).toBe(slot.def.mag! - 1);
   });
 
-  it('Assault Rifle rounds pierce through to the next units in line', () => {
-    const world = arena(catalog, { slots: ['rifle', 'repair', 'emp', 'decoy'] });
+  it('bullet rounds (the test rifle) pierce through to the next units in line', () => {
+    const world = arena(catalog, { slots: ['rifle'] });
     const P = world.player!;
-    const rifle = catalog.armament('rifle') as BulletWeapon;
+    const rifle = catalog.weapon('rifle') as BulletWeapon;
     const line = [120, 160, 200, 240].map((dx) => addSoldier(world, 'bulwark', ENEMY, P.x + dx, P.y));
     for (const u of line) u.hp = u.maxHp = 1e6;
     const slot = P.slots[0] as WeaponSlot;
@@ -60,9 +60,9 @@ describe('weapons', () => {
   });
 
   it('Missile Pod missiles launch backwards, then turn and home in', () => {
-    const world = arena(catalog, { slots: ['missile', 'repair', 'emp', 'decoy'] });
+    const world = arena(catalog, { slots: ['missile'] });
     const P = world.player!;
-    const w = catalog.armament('missile') as MissileWeapon;
+    const w = catalog.weapon('missile') as MissileWeapon;
     const target = addSoldier(world, 'bulwark', ENEMY, P.x + 400, P.y);
     target.hp = target.maxHp = 1e6;
     fireWeapon(world, P, P.slots[0] as WeaponSlot);
@@ -84,7 +84,7 @@ describe('weapons', () => {
     const missile = (spread: boolean): FlyingShot => ({
       kind: 'missile', x: 2990, y: 1000, vx: 300, vy: 0, team: 0, dmg: 1, life: 2, r: 3, pierce: 0, hits: null,
       splash: 0, splashDmg: 0, homing: { turnRate: 6, acceleration: 0, retargetRadius: 450, spread }, target: dead,
-      maxSpeed: 300, src: 'player', wid: 'missile', dtype: 'blast',
+      maxSpeed: 300, knock: null, src: 'player', wid: 'missile', dtype: 'blast',
     });
     world.shots = Array.from({ length: 8 }, () => missile(true));
     new ProjectileSystem().update(world, 1 / 60);
@@ -98,11 +98,11 @@ describe('weapons', () => {
   });
 
   it('Missile Pod launches one missile per target from the top of the ranking', () => {
-    const world = arena(catalog, { slots: ['missile', 'repair', 'emp', 'decoy'] });
+    const world = arena(catalog, { slots: ['missile'] });
     const P = world.player!;
     const targets = Array.from({ length: 8 }, (_, i) => addSoldier(world, 'trooper', ENEMY, P.x + 100 + i * 40, P.y + 60));
     fireWeapon(world, P, P.slots[0] as WeaponSlot);
-    const { salvo } = catalog.armament('missile') as MissileWeapon;
+    const { salvo } = catalog.weapon('missile') as MissileWeapon;
     const locked = world.shots.map((s) => (s.kind === 'missile' ? s.target : null));
     expect(locked).toHaveLength(salvo);
     expect(new Set(locked).size).toBe(salvo);
@@ -110,7 +110,7 @@ describe('weapons', () => {
   });
 
   it('auto-fires, empties the magazine, reloads with the frame multiplier, then refills', () => {
-    const world = arena(catalog, { frame: 'quickdraw', slots: ['beamRifle', 'repair', 'emp', 'decoy'] });
+    const world = arena(catalog, { build: presetBuild(catalog, 'Quickdraw'), slots: ['beamRifle'] });
     const P = world.player!;
     const target = addSoldier(world, 'bulwark', ENEMY, P.x + 200, P.y);
     target.hp = target.maxHp = 1e9;
@@ -126,8 +126,8 @@ describe('weapons', () => {
     expect(slot.ammo).toBeLessThanOrEqual(mag);
   });
 
-  it("Plasma Mortar's shell keeps x, y on its ground point while it flies", () => {
-    const world = arena(catalog, { slots: ['mortar', 'repair', 'emp', 'decoy'] });
+  it("a mortar shell keeps x, y on its ground point while it flies", () => {
+    const world = arena(catalog, { slots: ['mortar'] });
     const P = world.player!;
     addSoldier(world, 'bulwark', ENEMY, P.x + 400, P.y);
     fireWeapon(world, P, P.slots[0] as WeaponSlot);
@@ -139,7 +139,7 @@ describe('weapons', () => {
   });
 
   it('Beam Saber lunges (no ammo) and slashes the target when the lunge ends', () => {
-    const world = arena(catalog, { slots: ['saber', 'repair', 'emp', 'decoy'] });
+    const world = arena(catalog, { slots: ['saber'] });
     const P = world.player!;
     const target = addSoldier(world, 'trooper', ENEMY, P.x + 120, P.y);
     const slot = P.slots[0] as WeaponSlot;

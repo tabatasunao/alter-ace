@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { aceHit, ALLY, ENEMY } from '../src/sim/entities';
+import { ALLY, ENEMY } from '../src/sim/entities';
 import type { LanceUnitWeapon } from '../src/data/types';
 import { lance } from '../src/sim/ai/weapons/behaviors/lance';
 import { kick } from '../src/sim/impact';
 import { battlePipeline } from '../src/sim/pipelines';
-import { addSoldier, ARMY_HIT, arena, battle, loadTestCatalog, run } from './helpers';
+import { aceHit, addSoldier, ARMY_HIT, arena, battle, loadTestCatalog, run } from './helpers';
 
 const still = { read: () => ({ x: 0, y: 0 }) };
 
 describe('impact: hit-stop, slow motion, shake and flash', () => {
   const catalog = loadTestCatalog();
   const im = catalog.battle.impact;
-  const hitBy = (id: string) => aceHit(catalog.armament(id) as { id: string; damageType: string });
+  const hitBy = (id: string) => aceHit(catalog, id);
 
   it('hit-stop holds the battle while effects, the camera and the impact itself keep running', () => {
     const world = battle(catalog, 3);
@@ -97,7 +97,7 @@ describe('impact: hit-stop, slow motion, shake and flash', () => {
       for (let i = 0; i < 200 && u.action; i++) if (u.action.step(1 / 60)) u.action = null;
     };
     fire('beamLance', 0);
-    expect(world.fx.some((f) => f.type === 'rail')).toBe(true);
+    expect(world.fx.some((f) => f.type === 'line')).toBe(true);
     expect(world.impact.shake).toBe(0); // too thin to shake
     const d = im.beam.range / 3;
     fire('megaBeam', d);
@@ -114,10 +114,10 @@ describe('impact: hit-stop, slow motion, shake and flash', () => {
       return u;
     };
     const heavy = unit();
-    world.combat.damage(heavy, im.stagger.minDamage * 2, hitBy('beamRifle'));
+    world.combat.damage(heavy, im.stagger.minDamage * 2, hitBy('sniper'));
     expect(heavy.stagger).toBe(im.stagger.time);
     const light = unit();
-    world.combat.damage(light, 1, hitBy('rifle'));
+    world.combat.damage(light, 1, hitBy('rail'));
     expect(light.stagger).toBe(0);
     const army = unit();
     world.combat.damage(army, 1e4, ARMY_HIT);
@@ -141,7 +141,7 @@ describe('impact: hit-stop, slow motion, shake and flash', () => {
     const P = world.player!;
     world.combat.kill(addSoldier(world, 'commander', ENEMY, P.x + 300, P.y), ARMY_HIT);
     expect(world.impact.freeze).toBe(0);
-    world.combat.kill(addSoldier(world, 'commander', ENEMY, P.x + 300, P.y), hitBy('rifle'));
+    world.combat.kill(addSoldier(world, 'commander', ENEMY, P.x + 300, P.y), hitBy('rail'));
     expect(world.impact.freeze).toBe(im.bigKill.freeze);
     expect(world.fx.filter((f) => f.type === 'smoke')).toHaveLength(2); // a staged blast for each big wreck
   });

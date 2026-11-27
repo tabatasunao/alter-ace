@@ -1,6 +1,6 @@
 import { SeededRandom } from '../../src/core/random';
 import type { Catalog } from '../../src/data/catalog';
-import type { ArmyMix, ToolDef, UnitClassDef, UnitWeaponDef, WeaponDef } from '../../src/data/types';
+import { FRAME_STATS, type ArmyMix, type UnitClassDef, type UnitWeaponDef, type WeaponDef } from '../../src/data/types';
 import { armyList } from '../../src/sim/spawning';
 import { behaviorFor } from '../../src/sim/weapons/registry';
 
@@ -22,7 +22,6 @@ export function renderReference(catalog: Catalog): string {
     '',
     '- [Ace frames](#ace-frames)',
     '- [Ace weapons](#ace-weapons)',
-    '- [Tools](#tools)',
     '- [Aim modes](#aim-modes)',
     '- [Damage types and armor](#damage-types-and-armor)',
     '- [Unit classes](#unit-classes)',
@@ -33,7 +32,6 @@ export function renderReference(catalog: Catalog): string {
   ];
   frames(catalog, out);
   weapons(catalog, out);
-  tools(catalog, out);
   aimModes(catalog, out);
   damage(catalog, out);
   classes(catalog, out);
@@ -46,13 +44,25 @@ export function renderReference(catalog: Catalog): string {
 // ---------- sections ----------
 
 function frames(catalog: Catalog, out: string[]): void {
+  const fb = catalog.frameBuild;
   out.push('## Ace frames', '');
-  out.push('The frame is picked in the hangar. Multipliers below 1 are better (less time between shots, shorter reloads).', '');
+  out.push(
+    `The frame is built in the hangar: ${fb.points} points over five stats, up to ${fb.maxPerStat} on each. A stat scales linearly from its value with no points to its value with ${fb.maxPerStat}.`,
+    'Multipliers below 1 are better (less time between shots, shorter reloads).',
+    '',
+  );
+  const value = (s: (typeof FRAME_STATS)[number], v: number) => (s === 'reload' || s === 'fireRate' ? mul(v) : s === 'dash' ? sec(v) : n(v));
   table(
     out,
-    ['Frame', 'Code', 'Type', 'Top speed', 'HP', 'Time between shots', 'Reload time', 'Tool recharge', 'Dash recharge'],
-    'lll--------',
-    catalog.frames.map((f) => [f.name, f.code, f.type, n(f.speed), n(f.hp), mul(f.rateMul), mul(f.reloadMul), mul(f.toolMul), sec(f.dashCd)]),
+    ['Stat', 'No points', `${fb.maxPerStat} points`],
+    'l--',
+    FRAME_STATS.map((s) => [fb.stats[s].label, value(s, fb.stats[s].min), value(s, fb.stats[s].max)]),
+  );
+  table(
+    out,
+    ['Preset', ...FRAME_STATS.map((s) => fb.stats[s].label)],
+    'l-----',
+    fb.presets.map((p) => [p.name, ...FRAME_STATS.map((s) => n(p.build[s]))]),
   );
 }
 
@@ -64,6 +74,7 @@ function weapons(catalog: Catalog, out: string[]): void {
     'a weapon with no magazine never reloads.',
     '',
   );
+  out.push(`Type traits: ${catalog.damageTypes.map((t) => `${t.name}: ${t.trait.toLowerCase()}`).join('; ')}.`, '');
   table(
     out,
     ['Weapon', 'Type', 'Behavior', 'Damage', 'Rounds/shot', 'Time between shots', 'Range', 'Magazine', 'Reload', 'Specials'],
@@ -94,19 +105,25 @@ function weaponSpecials(w: WeaponDef): string {
       break;
     case 'rail':
       s.push('instant line', `width ${n(w.hitWidth)}`);
-      if (w.steady) s.push(`damage ${mul(w.steady.still)} standing still to ${mul(w.steady.moving)} at top speed`);
+      if (w.steady) s.push(`damage ${mul(w.steady.moving)} at top speed rising to ${mul(w.steady.still)} at rest; under ${pct(w.steady.fullBelow)} of top speed ${mul(w.steady.still * w.steady.fullBonus)} (full strength)`);
+      break;
+    case 'sniper':
+      s.push('instant beam at one target', `sight line ${sec(w.sight)} before each shot`);
       break;
     case 'missile':
-      s.push(`splash ${n(w.splash)} for ${n(w.splashDmg)}`, `launches ${launchWord(w.launchAngle)}`, `homes after ${sec(w.homingDelay)}`);
+      s.push(`splash ${n(w.splash)} for ${n(w.splashDmg)}`, `launches ${launchWord(w.launchAngle)}`, `homes after ${sec(w.homingDelay)}, turn rate ${n(w.turnRate)}`);
       break;
-    case 'breach':
-      s.push(
-        `${w.pellets} pellets, spread ±${deg(w.spread)}`,
-        `every ${w.blastEvery}th shot a blast ${n(w.blast.radius)} wide for ${n(w.blast.dmg)}, knockback ${n(w.blast.push)}, recoil ${n(w.recoil)}`,
-      );
+    case 'shotgun':
+      s.push(`${w.pellets} pellets, spread ±${deg(w.spread)}`, `each hit knocks back ${n(w.knock.push)} over ${sec(w.knock.time)}`, `each shot jolts the ace ${n(w.jolt.distance)} back over ${sec(w.jolt.time)}, then slides it back at ${n(w.jolt.carry)}`);
       break;
     case 'mortar':
-      s.push('lobbed', `${sec(w.flight)} flight`, `splash ${n(w.splash)} for ${n(w.splashDmg)}`, `stuns within ${n(w.stun.radius)} for ${sec(w.stun.time)}, exposed ${mul(w.stun.exposedMul)}`);
+      s.push(
+        'lobbed',
+        `${sec(w.flight)} flight`,
+        `landing point tracks the target at ${n(w.track)}/s`,
+        `splash ${n(w.splash)} for ${n(w.splashDmg)}`,
+        `stuns within ${n(w.stun.radius)} for ${sec(w.stun.time)}, exposed ${mul(w.stun.exposedMul)}`,
+      );
       break;
     case 'saber':
       s.push(`lunge, slash ${n(w.slash)} reach over ${deg(w.arcHalfAngle * 2)}`, `${sec(w.iframes)} invulnerable`);
@@ -114,48 +131,13 @@ function weaponSpecials(w: WeaponDef): string {
   }
   if (w.fireWhileDashing) s.push('fires during a dash');
   if (w.movingFireInterval !== undefined) s.push(`time between shots ${mul(w.movingFireInterval)} at top speed`);
-  if (w.spin) s.push(`spins up from ${mul(w.spin.start)} to ${mul(w.spin.top)} fire rate over ${sec(w.spin.upTime)}`);
-  if (w.heat) s.push(`heat: overheats after ${w.mag} shots, cools ${n(w.heat.coolPerSecond)}/s after ${sec(w.heat.coolDelay)}`);
-  if (w.burstArc !== undefined) s.push(`release burst in front ${n(w.burstArc)}°`);
+  if (w.fullArmsFireInterval !== undefined) s.push(`time between shots ${mul(w.fullArmsFireInterval)} during Full Arms`);
+  if (w.swingZoom !== undefined) s.push(`camera zoom ${mul(w.swingZoom)} during a lunge`);
+  if (w.viewZoom !== undefined) s.push(`camera zoom ${mul(w.viewZoom)} while active`);
+  if (w.burstArc !== undefined) s.push(`Full Arms burst in front ${n(w.burstArc)}°`);
   return s.join('; ');
 }
 
-function tools(catalog: Catalog, out: string[]): void {
-  out.push('## Tools', '');
-  out.push("A tool fires once when its key is pressed, then recharges (times are before the frame's multiplier). During super release every tool hardpoint runs its release effect, whatever its recharge.", '');
-  table(
-    out,
-    ['Tool', 'Effect', 'Recharge', 'Details', 'During super release'],
-    'll-ll',
-    catalog.tools.map((t) => [t.name, `\`${t.effect}\``, sec(t.cooldown), toolDetails(t), toolRelease(t)]),
-  );
-}
-
-function toolRelease(t: ToolDef): string {
-  switch (t.effect) {
-    case 'repair':
-      return `heals ${pct(t.healFraction)} of max HP over the release`;
-    case 'emp':
-      return `a burst at the start and every ${sec(t.releaseInterval)}`;
-    case 'decoy':
-      return `an afterimage (${n(t.releaseHp)} HP, ${sec(t.releaseLife)}) at the start and every ${sec(t.releaseInterval)}`;
-    case 'overboost':
-      return 'runs for the whole release';
-  }
-}
-
-function toolDetails(t: ToolDef): string {
-  switch (t.effect) {
-    case 'repair':
-      return `heals ${pct(t.healFraction)} of max HP over ${sec(t.duration)}`;
-    case 'emp':
-      return `stuns enemies within ${n(t.radius)} for ${sec(t.stun)} and clears their shots`;
-    case 'decoy':
-      return `beacon with ${n(t.hp)} HP for ${sec(t.life)}; pulls enemy fire within ${n(t.pullRadius)}`;
-    case 'overboost':
-      return `${sec(t.duration)}: speed ${mul(t.speedMul)}, time between shots ${mul(t.fireIntervalMul)}, damage taken ${mul(t.damageTakenMul)}`;
-  }
-}
 
 function aimModes(catalog: Catalog, out: string[]): void {
   out.push('## Aim modes', '');
@@ -220,6 +202,7 @@ function classTraits(c: UnitClassDef): string {
   if (c.huntsAce) s.push('hunts the ace');
   if (c.nearAce) s.push(`stalks the ace within ${n(c.nearAce)}`);
   if (c.rally) s.push(`rallies ${c.rally.min}–${c.rally.max} units`);
+  if (c.holdLine) s.push(c.holdLine.depth === 0 ? `holds its front line (±${n(c.holdLine.band)})` : `holds ${n(c.holdLine.depth)} ± ${n(c.holdLine.band)} behind its front line`);
   if (c.kiteDistance) s.push(`backs off inside ${n(c.kiteDistance)}`);
   if (c.aura) s.push(`aura: allies within ${n(c.aura.radius)} fire ${pct(c.aura.fireRateMul - 1)} faster`);
   if (c.heal) s.push(`heals its army within ${n(c.heal.radius)} by ${pct(c.heal.amount)} of max HP every ${sec(c.heal.interval)} (allied Healers: the ace too)`);
@@ -261,6 +244,7 @@ function unitWeapons(catalog: Catalog, out: string[]): void {
 
 function unitWeaponSpecials(w: UnitWeaponDef): string {
   const s: string[] = [];
+  if (w.armyMul) s.push(`×${n(w.armyMul)} damage to units`);
   switch (w.behavior) {
     case 'shot':
       s.push(w.projectile);
@@ -272,6 +256,7 @@ function unitWeaponSpecials(w: UnitWeaponDef): string {
       s.push(`salvo ${w.salvo}`, `splash ${n(w.splash)} for ${n(w.splashDmg)}`);
       if (w.launchAngle) s.push(`launches ${launchWord(w.launchAngle)}`);
       if (w.weave) s.push('weaving swarm');
+      if (w.terminal) s.push(`within ${n(w.terminal.range)} of its target, one hard turn (turn rate ${n(w.terminal.turnRate)} for ${sec(w.terminal.time)}, aimed ${w.terminal.lead === 1 ? 'where it is heading' : `${n(w.terminal.lead)} of the way ahead`}), then straight on`);
       break;
     case 'lance':
       s.push(`charges ${sec(w.charge)}, aim locks for the last ${sec(w.lock)}`, `hits the whole line within ${n(w.width)}`);
@@ -279,6 +264,11 @@ function unitWeaponSpecials(w: UnitWeaponDef): string {
       break;
     case 'saber':
       s.push(`lunge, slash ${n(w.slash)} reach over ${deg(w.arcHalfAngle * 2)}`);
+      if (w.dash) {
+        const d = w.dash;
+        s.push(`dash strike up to ${n(d.range)}: ${sec(d.windup)} wind-up (aim locks for the last ${sec(d.lock)}), dash at ${n(d.speed)}, slash ${n(d.dmg)}, every ${sec(d.cooldown)}`);
+      }
+      if (w.retreat) s.push(`hops back ${n(w.retreat.distance)} after each slash`);
       break;
   }
   return s.join('; ');
@@ -351,14 +341,15 @@ function rules(catalog: Catalog, out: string[]): void {
   rows.push(
     ['Dash', `${n(p.dashDistance)} in ${sec(p.dashDuration)}, ${sec(p.dashIframes)} invulnerable`, '`player.dash*`'],
     ['Regeneration', `${pct(p.regenPerSecond)} of max HP per second after ${sec(p.regenDelay)} without damage`, '`player.regen*`'],
-    ['Super release', `${sec(sr.duration)} of every weapon firing and every tool's release effect; damage taken ${mul(sr.damageTakenMul)}`, '`player.superRelease`'],
-    ['Super release opening burst', `${n(sr.openingBurst)} s worth of each weapon's fire at once, ${sec(sr.openingIframes)} invulnerable`, '`player.superRelease.openingBurst`, `.openingIframes`'],
+    ['Full Arms', `${sec(sr.duration)} of every weapon firing; damage taken ${mul(sr.damageTakenMul)}`, '`player.superRelease`'],
+    ['Full Arms opening burst', `${n(sr.openingBurst)} s worth of each weapon's fire at once, ${sec(sr.openingIframes)} invulnerable`, '`player.superRelease.openingBurst`, `.openingIframes`'],
     [
-      'Super release gauge',
-      `${pct(sr.charge.perKill)} per ace kill (${mul(sr.charge.closeKillMul)} within ${n(sr.charge.closeRadius)}), ${pct(sr.charge.perSecond)} per second; none while a release runs`,
-      '`player.superRelease.charge`',
+      'Full Arms gauge',
+      `${pct(sr.charge.perKill)} per ace kill (${mul(sr.charge.closeKillMul)} within ${n(sr.charge.closeRadius)}), ${pct(sr.charge.perSecond)} per second; starts at ${pct(sr.charge.start)}; none while Full Arms runs`,
+      '`player.superRelease.charge` (`start`, `perKill`, `closeRadius`, `closeKillMul`, `perSecond`)',
     ],
-    ['Close dodge', `dash recharge refunded ${pct(p.dodge.dashRefund)}, release gauge +${pct(p.dodge.releaseCharge)}; once per dash`, '`player.dodge`'],
+    ['Close dodge', `dash recharge refunded ${pct(p.dodge.dashRefund)}, Full Arms gauge +${pct(p.dodge.releaseCharge)}; once per dash`, '`player.dodge`'],
+    ['Launch', `the ace boosts east at ${mul(p.launch.speed)} its top speed; camera ${mul(p.launch.zoom)} closer during the launch sequence`, '`player.launch` (`speed`, `zoom`)'],
     ['Critical HP warning', `below ${pct(b.alerts.criticalHp)}`, '`alerts.criticalHp`'],
     ['Shot / effect caps', `${b.limits.maxShots} / ${b.limits.maxEffects}`, '`limits`'],
   );
@@ -379,9 +370,12 @@ function rules(catalog: Catalog, out: string[]): void {
     impactRow('Ace hit', im.aceHit, `any hit on the ace, scaled by damage (full at ${pct(im.aceHit.fullShare)} of max HP); the ace jolts for ${sec(im.aceHit.react)}`, 'aceHit'),
     impactRow('Big kill', im.bigKill, 'the ace destroys a Commander or semi-ace', 'bigKill'),
     impactRow('Heavy hit', im.heavyHit, `one hit takes ${pct(im.heavyHit.minShare)} or more of the ace's max HP`, 'heavyHit'),
-    impactRow('Super release', im.release, 'super release starts', 'release'),
+    impactRow('Full Arms', im.release, 'Full Arms starts', 'release'),
     impactRow('Close dodge', im.dodge, "an attack passes through the ace's dash", 'dodge'),
     impactRow('Saber slash', im.slash, "one of the ace's slashes connects", 'slash'),
+    impactRow('Full-strength Railgun hit', im.railFull, 'a full-strength Railgun shot hits', 'railFull'),
+    impactRow('Shotgun shot', im.shotgun, 'each Shotgun shot', 'shotgun'),
+    impactRow('Launch', im.launch, 'the ace boosts off at the end of the launch sequence', 'launch'),
     impactRow('Ace destroyed', im.aceDeath, `then ${mul(im.aceDeath.slowScale)} speed for ${sec(im.aceDeath.slow)}`, 'aceDeath'),
     impactRow('Blast', im.blast, `radius ${n(im.blast.minRadius)}+ within ${n(im.blast.range)} of the ace (fades with distance)`, 'blast'),
     impactRow('Wide beam', im.beam, `a hostile line attack ${n(im.beam.minWidth)}+ wide within ${n(im.beam.range)} of the ace (fades with distance)`, 'beam'),
@@ -405,14 +399,14 @@ function rules(catalog: Catalog, out: string[]): void {
 
   const pr = b.praise;
   out.push(
-    `Praise banners: every ${pr.killMilestone} ace kills; ${pr.streak.kills} kills within ${sec(pr.streak.window)} (then quiet for ${sec(pr.streak.cooldown)}); a super release that downs ${pr.releaseMinKills} or more.`,
+    `Praise banners: every ${pr.killMilestone} ace kills; ${pr.streak.kills} kills within ${sec(pr.streak.window)} (then quiet for ${sec(pr.streak.cooldown)}); Full Arms downing ${pr.releaseMinKills} or more.`,
     '',
   );
   out.push(`Weapon medals (career kills with one weapon): ${catalog.loadout.medals.map((m) => `${m.name} ${m.kills}`).join(', ')}.`, '');
 
   const d = catalog.loadout.defaultLoadout;
   out.push(
-    `Default loadout: ${catalog.frame(d.frame).name} frame; ${d.slots.map((id) => catalog.armament(id).name).join(', ')};`,
+    `Default loadout: named ${d.name}; frame ${FRAME_STATS.map((s) => `${catalog.frameBuild.stats[s].label} ${d.build[s]}`).join(', ')}; ${d.slots.map((id) => catalog.weapon(id).name).join(', ')};`,
     `${catalog.aimModes[catalog.aimModeIndex(d.aim)]!.name} aim; ${d.enemies} enemies.`,
     '',
   );

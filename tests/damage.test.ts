@@ -16,12 +16,12 @@ describe('damage types and armor', () => {
   }
 
   it('scales the ace hits by the weapon type against the armor', () => {
-    expect(hit('bulwark', 'rifle').lost).toBe(50); // kinetic vs heavy plate
-    expect(hit('bulwark', 'beamRifle').lost).toBe(150); // beam vs heavy plate
+    expect(hit('bulwark', 'rail').lost).toBe(50); // kinetic vs heavy plate
+    expect(hit('bulwark', 'sniper').lost).toBe(150); // beam vs heavy plate
     expect(hit('prism', 'saber').lost).toBe(50); // beam vs beam coating
-    expect(hit('prism', 'mortar').lost).toBe(150); // blast vs beam coating
+    expect(hit('prism', 'bazooka').lost).toBe(150); // blast vs beam coating
     expect(hit('breacher', 'missile').lost).toBe(50); // blast vs reactive armor
-    expect(hit('breacher', 'gatling').lost).toBe(150); // kinetic vs reactive armor
+    expect(hit('breacher', 'shotgun').lost).toBe(150); // kinetic vs reactive armor
     expect(hit('striker', 'rail').lost).toBe(100); // standard armor
   });
 
@@ -35,16 +35,16 @@ describe('damage types and armor', () => {
   });
 
   it('marks critical and resisted hits with their damage type, but not normal ones', () => {
-    expect(hit('bulwark', 'beamRifle').markers).toEqual([expect.objectContaining({ result: 'critical', dtype: 'beam', label: true })]);
-    expect(hit('bulwark', 'rifle').markers).toEqual([expect.objectContaining({ result: 'resisted', dtype: 'kinetic' })]);
-    expect(hit('striker', 'rifle').markers).toEqual([]);
+    expect(hit('bulwark', 'sniper').markers).toEqual([expect.objectContaining({ result: 'critical', dtype: 'beam', label: true })]);
+    expect(hit('bulwark', 'rail').markers).toEqual([expect.objectContaining({ result: 'resisted', dtype: 'kinetic' })]);
+    expect(hit('striker', 'rail').markers).toEqual([]);
   });
 
   it('shows a hit label over a unit at most once in a while, so rapid fire does not stack text', () => {
     const world = arena(catalog);
     const u = addSoldier(world, 'bulwark', ENEMY, 3000, 1000);
     u.hp = u.maxHp = 1e6;
-    const beam = aceHit(catalog, 'beamRifle');
+    const beam = aceHit(catalog, 'sniper');
     const labels = () => world.fx.filter((f) => f.type === 'hitMarker' && f.label).length;
     world.combat.damage(u, 1, beam);
     u.flash = 0; // as if the hit flash had worn off
@@ -64,7 +64,7 @@ describe('damage types and armor', () => {
     const reactive = addSoldier(world, 'breacher', ENEMY, 3000, 1000);
     plated.hp = plated.maxHp = reactive.hp = reactive.maxHp = 1000;
     // Both sit at the blast center, so each takes the full 100 before armor.
-    world.combat.explode(3000, 1000, 50, 100, 0, aceHit(catalog, 'mortar'));
+    world.combat.explode(3000, 1000, 50, 100, 0, aceHit(catalog, 'bazooka'));
     expect(1000 - plated.hp).toBe(100); // blast vs heavy plate: normal
     expect(1000 - reactive.hp).toBe(50); // blast vs reactive armor: halved
   });

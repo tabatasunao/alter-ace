@@ -37,7 +37,6 @@ src/
     systems/          one System per job
     weapons/          ace weapon behaviors (registry.ts)
     ai/               AI targeting, leash, intercept aim, unit weapon behaviors (ai/weapons)
-    tools/            tool effects (registry.ts)
     targeting/        aim mode strategies
     projectiles/      projectile motions
     movement/         ace movement models
@@ -45,10 +44,11 @@ src/
     attacks.ts        attack shapes shared by the ace and the AI
     statuses.ts       ace timed effects
     SpatialGrid.ts    spatial queries
+  i18n/               languages: locales/*.json string tables, t()/tm(), data-file text (data.ts), page text (static.ts)
   render/             canvas renderer: layers/ (order) and painters/ (drawing)
-  ui/                 DOM views: hangar, HUD, result, pause, banner
-  input/              keyboard, touch joystick, wheel
-  game/               loadout model and storage, sortie rating, career (bests, medals)
+  ui/                 DOM views: hangar, HUD, result, pause, options, banner, launch sequence
+  input/              keyboard and key map, touch joystick, wheel
+  game/               loadout model and storage, sortie rating, career (bests, medals), defeat tips, settings
   style.css           styles and color tokens
 tests/                Vitest tests against the real data files
   helpers.ts          battle(), arena(), addSoldier()
@@ -60,7 +60,7 @@ docs/                 documentation (index: docs/README.md)
 ## Rules
 
 1. **Tuning values go in `public/data/*.json`**, with the matching type in `src/data/types.ts`. Visual constants and small implementation constants (spawn offsets, burst scatter, label throttling) may stay next to the code that uses them.
-2. **Extend with strategies, not switches.** Weapons (`behavior`), unit weapons (`behavior`), tools (`effect`), aim modes (`strategy`), unit looks (`shape`), projectile motions and looks, effects, and movement models each have a typed registry. A new variant is a new implementation plus a registry entry. Do not add `if (id === '...')` branches in systems. Inside the sim the same applies to damage modifiers (`DAMAGE_RULES`), timed unit behavior (`UnitAction`), ace buffs (`Status`) and shared attack shapes (`src/sim/attacks.ts`).
+2. **Extend with strategies, not switches.** Weapons (`behavior`), unit weapons (`behavior`), aim modes (`strategy`), unit looks (`shape`), projectile motions and looks, effects, and movement models each have a typed registry. A new variant is a new implementation plus a registry entry. Do not add `if (id === '...')` branches in systems. Inside the sim the same applies to damage modifiers (`DAMAGE_RULES`), timed unit behavior (`UnitAction`), ace buffs (`Status`) and shared attack shapes (`src/sim/attacks.ts`).
 3. **`src/sim` is headless:** no DOM, canvas or `window`. It communicates out through `world.events` (`GameEvents`) and in through `MoveInput` and `PlayerCommands`.
 4. **All simulation randomness goes through `world.random`.** Never `Math.random()` in `src/sim`. Object property order in `UnitFactory` fixes the order of random draws.
 5. **New mechanics are new `System`s** in `src/sim/pipelines.ts`, one job each.
@@ -69,6 +69,7 @@ docs/                 documentation (index: docs/README.md)
 8. **Per-unit cost.** A battle runs about 400 units and a few hundred shots. Code that runs every step queries `world.grid` (box, radius, nearest, segment) instead of looping over `world.units`. Layers skip off-screen objects (`UnitLayer`, `ShotLayer`). Performance changes are measured before and after.
 9. **Semi-aces are enemy-only.** Validation rejects a `semiAce` class in `allyMix`, `minimums` or `fillerClass`.
 10. **Docs describe the current game only.** Dry, factual, present tense. No tips, history or plans.
+11. **Player-facing text is translated.** UI code uses `t('key')`, with the English in `src/i18n/locales/en.json` and the same key in `ja.json`, `zh.json` and `ko.json` (except `ENGLISH_ONLY` keys: the launch sequence is English in every language). The sim emits a `Message` (`msg(key, params)`) instead of a string. Data-file text is English, translated under keys like `weapon.<id>.desc`. Proper nouns stay English in every language: weapon, unit class, unit weapon and preset names (no keys), and Full Arms and semi-ace inside translations.
 
 ## Workflows
 
@@ -79,7 +80,7 @@ docs/                 documentation (index: docs/README.md)
 3. If a hand-written page states a value or behavior that changed (`docs/game.md`, `weapons.md`, `units.md`, `mechanics.md`, `data.md`), update it.
 4. `npm test`. Commit the data and the regenerated page together.
 
-### New variant (weapon behavior, tool, aim mode, unit weapon, unit look, projectile, effect, movement model)
+### New variant (weapon behavior, aim mode, unit weapon, unit look, projectile, effect, movement model)
 
 Follow the recipe in [docs/architecture.md](docs/architecture.md#recipes). TypeScript (for union-keyed registries) and the boot-time registry check report missing pieces. Add a test.
 
@@ -99,6 +100,7 @@ Add a `System` to `battlePipeline()`, its numbers to the data, and a test. Playe
   - `battle(catalog, seed)`: a full sortie.
   - `arena(catalog)`: the ace only.
   - `addSoldier(world, classId, team, x, y)`: place a unit.
+  - `loadFixtureCatalog()`: the real data plus test-only weapons (`tests/fixtures/extraWeapons.json`) for behaviors no current weapon uses.
 - Every new behavior, effect or strategy gets a test.
 - Float assertions: use binary-exact values (0.25, 0.125) or `toBeCloseTo`.
 - Determinism: battles replay exactly from a seed (`tests/simulation.test.ts`). A change that must not alter gameplay can be checked by recording a few seeded battles before and after.
@@ -112,7 +114,7 @@ Checks that run on every `npm test`:
 | `tests/docs.test.ts` | `docs/reference.md` does not match the data, a relative link or `#anchor` in the docs is broken, or a page in `docs/` is not linked from `docs/README.md` |
 | `tests/simulation.test.ts` | Whole battles: deployment, reinforcements, victory, seeded replay |
 
-Other test files: `load`, `heal`, `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `releaseTools`, `dodge`, `impact`, `praise`, `closeQuarters`, `aceCharges`, `mortarStun`, `weaponPersonality`, `unitWeapons`, `semiAces`, `tools`, `aimModes`, `movement`, `loadout`, `ui`.
+Other test files: `load`, `heal`, `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `dodge`, `impact`, `praise`, `closeQuarters`, `aceCharges`, `mortarStun`, `weaponPersonality`, `unitWeapons`, `semiAces`, `aimModes`, `movement`, `loadout`, `settings`, `ui`, `i18n`.
 
 ## Debugging
 
@@ -129,7 +131,7 @@ Other test files: `load`, `heal`, `core`, `spatialGrid`, `combat`, `damage`, `we
 | [README.md](README.md) | Project summary, play link, controls, build |
 | [docs/README.md](docs/README.md) | Documentation index |
 | [docs/game.md](docs/game.md) | Sortie flow, controls, hangar, HUD, visual legend, ranks |
-| [docs/weapons.md](docs/weapons.md) | Hardpoints, weapons, tools, frames, aim modes, damage types, super release |
+| [docs/weapons.md](docs/weapons.md) | Hardpoints, weapons, frames, aim modes, damage types, Full Arms |
 | [docs/units.md](docs/units.md) | Unit classes, AI behavior, stalking, deployment |
 | [docs/mechanics.md](docs/mechanics.md) | Exact rules and formulas |
 | [docs/reference.md](docs/reference.md) | Every value. Generated; do not edit |

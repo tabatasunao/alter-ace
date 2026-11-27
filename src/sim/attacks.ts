@@ -1,6 +1,6 @@
 import { segmentDistance, wrapAngle } from '../core/math';
-import type { BeamLook, StunSpec } from '../data/types';
-import type { FlyingShot, Hit, Homing, Team, Tone, Unit } from './entities';
+import type { BeamLook, Knock, StunSpec } from '../data/types';
+import type { FlyingShot, Hit, Homing, Soldier, Team, Tone, Unit } from './entities';
 import { kick } from './impact';
 import type { World } from './World';
 
@@ -78,25 +78,45 @@ export interface LineSpec {
   readonly dmg: number;
   /** Peak width of the drawn line. */
   readonly lineWidth: number;
-  /** How the discharge is drawn (default `rail`). */
+  /** How the discharge is drawn (default `line`). */
   readonly look?: BeamLook;
 }
 
 /** Seconds each discharge look stays on screen. */
-const LOOK_LIFE: Readonly<Record<BeamLook, number>> = { rail: 0.3, heavyBeam: 0.6 };
+const LOOK_LIFE: Readonly<Record<BeamLook, number>> = { line: 0.3, heavyBeam: 0.6 };
+
+/** Where a line attack ends and how many units it hit. */
+export interface LineHits {
+  readonly x2: number;
+  readonly y2: number;
+  readonly hits: number;
+}
 
 /**
- * An instant beam (Railgun, Beam lance): hits every hostile unit on the line out to full range at
- * once. Only the grid cells along the line are searched.
+ * Hits every hostile unit on the line out to `range` at once, within `width` of it, for `dmg`.
+ * Only the grid cells along the line are searched. Draws nothing.
  */
-export function lineStrike(world: World, a: Attacker, angle: number, s: LineSpec, hit: Hit, tone: Tone): void {
+export function strikeLine(world: World, a: Attacker, angle: number, s: Pick<LineSpec, 'range' | 'width' | 'dmg'>, hit: Hit): LineHits {
   const x2 = a.x + Math.cos(angle) * s.range;
   const y2 = a.y + Math.sin(angle) * s.range;
+  let hits = 0;
   world.grid.forEachNearSegment(a.x, a.y, x2, y2, s.width + MAX_UNIT_RADIUS, (u) => {
     if (u.team === a.team || !u.alive) return;
-    if (segmentDistance(u.x, u.y, a.x, a.y, x2, y2) < u.size * 0.5 + s.width) world.combat.damage(u, s.dmg, hit);
+    if (segmentDistance(u.x, u.y, a.x, a.y, x2, y2) < u.size * 0.5 + s.width) {
+      world.combat.damage(u, s.dmg, hit);
+      hits++;
+    }
   });
-  const look = s.look ?? 'rail';
+  return { x2, y2, hits };
+}
+
+/**
+ * An instant beam (Beam lance, mega-beam): strikes the line, draws the discharge in its look, and
+ * shakes the screen when a wide hostile beam passes near the ace. Returns how many units it hit.
+ */
+export function lineStrike(world: World, a: Attacker, angle: number, s: LineSpec, hit: Hit, tone: Tone): number {
+  const { x2, y2, hits } = strikeLine(world, a, angle, s, hit);
+  const look = s.look ?? 'line';
   world.addFx({ type: look, x: a.x, y: a.y, x2, y2, t: 0, life: LOOK_LIFE[look], tone, width: s.lineWidth });
   // A wide hostile beam shakes the screen when it passes near the ace.
   const beam = world.catalog.battle.impact.beam;
@@ -105,6 +125,7 @@ export function lineStrike(world: World, a: Attacker, angle: number, s: LineSpec
     const d = segmentDistance(P.x, P.y, a.x, a.y, x2, y2);
     if (d < beam.range) kick(world, beam, 1 - d / beam.range);
   }
+  return hits;
 }
 
 /** Angle offset of shot `i` of `n` spread evenly across `fan` radians (0 for a single shot). */
@@ -127,6 +148,7 @@ export interface ShotSpec {
   readonly splashDmg?: number;
   readonly homing?: Homing | null;
   readonly target?: Unit | null;
+  readonly knock?: Knock | null;
 }
 
 /** Launches a flying shot from (x, y) along `angle`. The one place a FlyingShot is put together. */
@@ -148,9 +170,24 @@ export function launchShot(world: World, team: Team, x: number, y: number, angle
     homing: s.homing ?? null,
     target: s.target ?? null,
     maxSpeed: s.maxSpeed ?? s.speed,
+    knock: s.knock ?? null,
     src: hit.src,
     wid: hit.wid,
     dtype: hit.dtype,
     semiAce: hit.semiAce,
+    armyMul: hit.armyMul,
   });
+}
+
+/** Every hostile ALTER whose body the line from `a` along `angle` crosses within `range`, nearest first. */
+export function soldiersOnLine(world: World, a: Attacker, angle: number, range: number): Soldier[] {
+  const x2 = a.x + Math.cos(angle) * range;
+  const y2 = a.y + Math.sin(angle) * range;
+  const found: Soldier[] = [];
+  world.grid.forEachNearSegment(a.x, a.y, x2, y2, MAX_UNIT_RADIUS, (u) => {
+    if (u.team === a.team || !u.alive || u.kind !== 'soldier') return;
+    if (segmentDistance(u.x, u.y, a.x, a.y, x2, y2) <= u.size * 0.5) found.push(u);
+  });
+  const d = (u: Soldier) => (u.x - a.x) ** 2 + (u.y - a.y) ** 2;
+  return found.sort((p, q) => d(p) - d(q));
 }

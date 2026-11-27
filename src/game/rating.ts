@@ -24,6 +24,13 @@ export function rankLetter(perEnemy: number, ranks: RatingData['ranks']): string
   return ranks.find((r) => perEnemy >= r.minScore)?.letter ?? '–';
 }
 
+/** The next rank above a score per enemy (the lowest one it hasn't reached), or null at the top. */
+export function nextRank(perEnemy: number, ranks: RatingData['ranks']): RatingData['ranks'][number] | null {
+  let next: RatingData['ranks'][number] | null = null;
+  for (const r of ranks) if (r.minScore > perEnemy && (!next || r.minScore < next.minScore)) next = r;
+  return next;
+}
+
 /** How a finished sortie rates (battle.json → rating); null when the ace was lost. */
 export function rateSortie(world: World): SortieRating | null {
   if (!world.status.over || !world.status.win) return null;

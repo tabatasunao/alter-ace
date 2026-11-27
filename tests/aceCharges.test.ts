@@ -7,6 +7,7 @@ import { chargeRelease } from '../src/sim/release';
 import { SoldierAISystem } from '../src/sim/systems/SoldierAISystem';
 import { saber } from '../src/sim/weapons/behaviors/saber';
 import { addSoldier, arena, loadTestCatalog } from './helpers';
+import { tm } from '../src/i18n';
 
 describe('turns for charged attacks on the ace', () => {
   const catalog = loadTestCatalog();
@@ -56,7 +57,7 @@ describe('beam saber and release charge feel', () => {
   it('a slash that connects lands with hit-stop; a whiff does not', () => {
     const world = arena(catalog, { slots: ['saber'] });
     const P = world.player!;
-    const w = catalog.armament('saber') as SaberWeapon;
+    const w = catalog.weapon('saber') as SaberWeapon;
     const swing = () => {
       saber.fire({ world, player: P, weapon: w, targets: [{ ...P, x: P.x + 40 } as never], angle: 0 } as never);
       P.lunge!.onArrive();
@@ -79,8 +80,8 @@ describe('beam saber and release charge feel', () => {
     expect(world.fx.some((f) => f.type === 'callout')).toBe(false);
     chargeRelease(world, P, 0.1);
     expect(P.releaseCharge).toBe(1);
-    expect(world.fx.filter((f) => f.type === 'callout' && f.text === 'RELEASE READY')).toHaveLength(1);
-    expect(world.fx.some((f) => f.type === 'pulse' && f.tone === 'accent')).toBe(true);
+    expect(world.fx.filter((f) => f.type === 'callout' && tm(f.msg) === 'FULL ARMS READY')).toHaveLength(1);
+    expect(world.fx.some((f) => f.type === 'pulse' && f.tone === 'release')).toBe(true);
     chargeRelease(world, P, 0.1);
     expect(world.fx.filter((f) => f.type === 'callout')).toHaveLength(1);
   });

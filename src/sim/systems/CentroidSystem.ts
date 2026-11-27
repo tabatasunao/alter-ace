@@ -2,7 +2,7 @@ import { ALLY } from '../entities';
 import type { System } from '../System';
 import type { World } from '../World';
 
-/** Average position of each army (idle units advance on the enemy's). Decoys don't count. */
+/** Average position of each army (idle units advance on the enemy's).  */
 export class CentroidSystem implements System {
   update(world: World): void {
     let sx0 = 0;
@@ -12,7 +12,6 @@ export class CentroidSystem implements System {
     let sy1 = 0;
     let n1 = 0;
     for (const u of world.units) {
-      if (u.kind === 'decoy') continue;
       if (u.team === ALLY) {
         sx0 += u.x;
         sy0 += u.y;

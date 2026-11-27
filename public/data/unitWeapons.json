@@ -149,14 +149,15 @@
       "behavior": "shot",
       "damageType": "beam",
       "projectile": "beam",
-      "radius": 4.2,
+      "radius": 5.5,
       "pierce": 2,
       "dmg": 18,
       "range": 798,
       "interval": 3,
-      "speed": 1575,
+      "speed": 1950,
       "spread": 0.02,
-      "lead": 0.35
+      "lead": 0.35,
+      "armyMul": 4
     },
     {
       "id": "microMissiles",
@@ -179,7 +180,9 @@
       "turnRate": 3.2,
       "acceleration": 715,
       "retargetRadius": 160,
-      "weave": { "amplitude": 0.9, "frequency": 1.4 }
+      "weave": { "amplitude": 0.9, "frequency": 1.4 },
+      "terminal": { "range": 260, "turnRate": 9, "time": 0.35, "lead": 1 },
+      "armyMul": 6
     },
     {
       "id": "beamSaber",
@@ -194,7 +197,9 @@
       "closeRange": 22,
       "lungeSpeed": 900,
       "maxLunge": 0.22,
-      "stopDistance": 18
+      "stopDistance": 18,
+      "dash": { "range": 420, "windup": 0.55, "lock": 0.3, "speed": 1300, "dmg": 60, "cooldown": 5 },
+      "retreat": { "distance": 120, "time": 0.16 }
     },
     {
       "id": "megaBeam",

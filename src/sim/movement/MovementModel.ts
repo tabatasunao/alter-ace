@@ -6,7 +6,7 @@ export interface SteerContext<M extends MovementDef = MovementDef> {
   readonly player: Player;
   /** Movement input this step, length <= 1. */
   readonly input: Point;
-  /** The frame's top speed, with Overboost applied. */
+  /** The frame's top speed, with running statuses applied. */
   readonly topSpeed: number;
   readonly dt: number;
   readonly config: M;

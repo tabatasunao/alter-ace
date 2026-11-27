@@ -1,7 +1,6 @@
 import { clamp } from '../core/math';
 import { startRelease } from './release';
 import { startReload } from './weapons/firing';
-import { useTool } from './tools/useTool';
 import type { World } from './World';
 
 /**
@@ -9,7 +8,7 @@ import type { World } from './World';
  * they don't touch world state themselves.
  *
  * Commands arrive between steps, after CleanupSystem has compacted `world.units`, so the spatial
- * grid's index lists are stale. Commands that query the grid (tools, super release) rebuild it first.
+ * grid's index lists are stale. Commands that query the grid (Full Arms) rebuild it first.
  */
 export class PlayerCommands {
   constructor(private readonly world: World) {}
@@ -23,17 +22,11 @@ export class PlayerCommands {
     return !w.isDemo && !w.status.over && !w.status.paused && !!w.player?.alive;
   }
 
-  /** Makes a weapon slot active, or uses a tool slot. */
+  /** Makes a weapon hardpoint active. */
   selectSlot(index: number): void {
     if (!this.canAct) return;
     const P = this.world.player!;
-    const slot = P.slots[index];
-    if (!slot) return;
-    if (slot.kind === 'tool') {
-      this.syncGrid();
-      useTool(this.world, P, index);
-      return;
-    }
+    if (!P.slots[index]) return;
     P.active = index;
     this.world.aim.timer = 0;
   }
@@ -53,7 +46,11 @@ export class PlayerCommands {
   dash(): void {
     if (!this.canAct) return;
     const P = this.world.player!;
-    if (P.dashCd > 0 || P.dash) return;
+    if (P.dash) return;
+    if (P.dashCd > 0) {
+      this.world.events.emit('actionDenied', { action: 'dash' });
+      return;
+    }
     const cfg = this.world.catalog.battle.player;
     let dx = P.input.x;
     let dy = P.input.y;
@@ -73,7 +70,7 @@ export class PlayerCommands {
   superRelease(): void {
     if (!this.canAct) return;
     this.syncGrid();
-    startRelease(this.world, this.world.player!);
+    if (!startRelease(this.world, this.world.player!)) this.world.events.emit('actionDenied', { action: 'release' });
   }
 
   /** Reloads the active weapon early. */
@@ -81,7 +78,7 @@ export class PlayerCommands {
     if (!this.canAct) return;
     const P = this.world.player!;
     const slot = P.slots[P.active];
-    if (slot?.kind === 'weapon' && slot.def.mag !== null && slot.ammo < slot.def.mag) startReload(P, slot);
+    if (slot && slot.def.mag !== null && slot.ammo < slot.def.mag) startReload(P, slot);
   }
 
   zoomBy(factor: number): void {

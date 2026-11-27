@@ -66,9 +66,9 @@ describe('thruster movement (default)', () => {
     expect(P.vy).toBeGreaterThan(0);
   });
 
-  it('bleeds off Overboost speed gradually when it ends', () => {
+  it('bleeds off status speed gradually when it ends', () => {
     const { P, input, steps, speed, top } = rig(catalog);
-    P.statuses.push({ id: 'test', label: 'Test', remaining: 99, mods: { speed: 1.7 }, heal: 0, ring: true });
+    P.statuses.push({ id: 'test', remaining: 99, mods: { speed: 1.7 }, ring: true });
     input.x = 1;
     steps(toTop);
     expect(speed()).toBeCloseTo(top * 1.7, 6);

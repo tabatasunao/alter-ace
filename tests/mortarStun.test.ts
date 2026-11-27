@@ -4,11 +4,11 @@ import { aceHit, ALLY, ENEMY } from '../src/sim/entities';
 import { ProjectileSystem } from '../src/sim/systems/ProjectileSystem';
 import { ShieldSystem } from '../src/sim/systems/ShieldSystem';
 import { mortar } from '../src/sim/weapons/behaviors/mortar';
-import { addSoldier, ARMY_HIT, arena, loadTestCatalog } from './helpers';
+import { addSoldier, ARMY_HIT, arena, loadFixtureCatalog } from './helpers';
 
-describe('Plasma Mortar stun', () => {
-  const catalog = loadTestCatalog();
-  const w = catalog.armament('mortar') as MortarWeapon;
+describe('mortar stun (test weapon)', () => {
+  const catalog = loadFixtureCatalog();
+  const w = catalog.weapon('mortar') as MortarWeapon;
 
   function landShell() {
     const world = arena(catalog, { slots: ['mortar'] });

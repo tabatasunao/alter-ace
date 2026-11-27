@@ -21,4 +21,6 @@ export interface UnitFireContext<W extends UnitWeaponDef = UnitWeaponDef> {
 export interface UnitWeaponBehavior<W extends UnitWeaponDef = UnitWeaponDef> {
   /** Fires; returns false to hold fire (the caller retries after `ai.aceCharges.retry`). */
   fire(ctx: UnitFireContext<W>): boolean | void;
+  /** How far away a target may be for `fire` to be called (default the weapon's `range`). */
+  reach?(weapon: W): number;
 }

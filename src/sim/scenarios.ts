@@ -1,7 +1,7 @@
 import { chunks, clamp } from '../core/math';
 import type { Random } from '../core/random';
 import type { Catalog } from '../data/catalog';
-import type { ZoomFit } from '../data/types';
+import type { FrameBuild, ZoomFit } from '../data/types';
 import { ALLY, ENEMY } from './entities';
 import { armyList, spawnGroup } from './spawning';
 import { World } from './World';
@@ -13,7 +13,9 @@ export interface Viewport {
 
 /** What the player chose in the hangar (the game layer's Loadout satisfies this). */
 export interface BattleSetup {
-  frame: string;
+  /** The player's name for their ALTER. */
+  name: string;
+  build: FrameBuild;
   slots: readonly string[];
   aim: string;
   enemies: number;
@@ -74,8 +76,8 @@ export function createBattleWorld(catalog: Catalog, random: Random, loadout: Bat
   world.stats.enemyQueue = enemies.slice(initial);
 
   const player = world.factory.player(
-    catalog.frame(loadout.frame),
-    loadout.slots.map((id) => catalog.armament(id)),
+    catalog.frameFor(loadout.build, loadout.name),
+    loadout.slots.map((id) => catalog.weapon(id)),
     battle.playerStartX,
     midY,
   );

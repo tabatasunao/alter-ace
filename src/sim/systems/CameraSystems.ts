@@ -6,6 +6,10 @@ abstract class SmoothCamera implements System {
   readonly duringFreeze = true;
   protected abstract target(world: World): Point;
   protected abstract followRate(world: World): number;
+  /** Multiplies the zoom the player chose (1 by default). */
+  protected zoomScale(_world: World, _dt: number): number {
+    return 1;
+  }
 
   update(world: World, dt: number): void {
     const c = world.camera;
@@ -13,14 +17,30 @@ abstract class SmoothCamera implements System {
     const k = Math.min(1, dt * this.followRate(world));
     c.x += (t.x - c.x) * k;
     c.y += (t.y - c.y) * k;
-    c.zoom += (c.zoomTarget - c.zoom) * Math.min(1, dt * world.catalog.battle.camera.zoomRate);
+    const { minZoom, zoomRate } = world.catalog.battle.camera;
+    const goal = Math.max(minZoom, c.zoomTarget * this.zoomScale(world, dt));
+    c.zoom += (goal - c.zoom) * Math.min(1, dt * zoomRate);
   }
 }
 
-/** Battle camera: follows the ace. */
+/**
+ * Battle camera: follows the ace; widens the view while the active weapon asks (`viewZoom`), and
+ * closes in while the ace lunges with a weapon that asks (`swingZoom`), holding briefly after.
+ */
 export class FollowCameraSystem extends SmoothCamera {
+  private swing = 0;
+
   protected target(world: World): Point {
     return world.player ?? world.camera;
+  }
+
+  protected override zoomScale(world: World, dt: number): number {
+    const P = world.player;
+    if (!P?.alive) return 1;
+    const def = P.slots[P.active]?.def;
+    this.swing = P.lunge ? world.catalog.battle.camera.swingHold : Math.max(0, this.swing - dt);
+    const swing = this.swing > 0 ? (def?.swingZoom ?? 1) : 1;
+    return (def?.viewZoom || 1) * swing;
   }
 
   protected followRate(world: World): number {

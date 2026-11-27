@@ -21,3 +21,29 @@ export function replayAnimation(el: HTMLElement, className: string): void {
   void el.offsetWidth;
   el.classList.add(className);
 }
+
+const lastHtml = new WeakMap<Element, string>();
+
+/** Sets innerHTML only when it changed. Callers pass markup they built from numbers and fixed text. */
+export function setHtml(el: Element, html: string): void {
+  if (lastHtml.get(el) === html) return;
+  lastHtml.set(el, html);
+  el.innerHTML = html;
+}
+
+/** A counter readout with its leading zeros dimmed, e.g. 7 in 3 digits: <span class="lz">00</span>7. */
+export function readoutHtml(value: number, digits: number): string {
+  const s = String(Math.max(0, Math.round(value)));
+  const pad = Math.max(0, digits - s.length);
+  return pad ? `<span class="lz">${'0'.repeat(pad)}</span>${s}` : s;
+}
+
+/** Text made safe to put in markup. */
+export function escapeHtml(text: string): string {
+  return text.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+/** Key caps for a list of key labels. */
+export function kbdHtml(labels: readonly string[]): string {
+  return labels.map((l) => `<kbd>${escapeHtml(l)}</kbd>`).join('');
+}

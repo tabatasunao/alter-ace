@@ -65,6 +65,6 @@ describe('data loading', () => {
     };
     const catalog = await loadCatalog('/', { fetch, wait: async () => {} });
     expect(failedOnce).toBe(true);
-    expect(catalog.loadout.defaultLoadout.frame).toBe('vanguard');
+    expect(catalog.loadout.defaultLoadout.build).toEqual(catalog.frameBuild.presets.find((p) => p.name === 'Vanguard')!.build);
   });
 });

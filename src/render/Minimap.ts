@@ -9,13 +9,17 @@ export class Minimap {
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    private readonly palette: Palette,
+    private palette: Palette,
     private readonly pixelRatio: () => number,
     private readonly mainViewport: () => Viewport,
   ) {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('2D canvas is not available');
     this.ctx = ctx;
+  }
+
+  setPalette(palette: Palette): void {
+    this.palette = palette;
   }
 
   draw(world: World): void {
@@ -35,7 +39,7 @@ export class Minimap {
 
     for (const u of world.units) {
       if (u.kind === 'player') continue;
-      ctx.fillStyle = u.kind === 'decoy' ? palette.tool : palette.tone(unitTone(u));
+      ctx.fillStyle = palette.tone(unitTone(u));
       const d = u.kind === 'soldier' && (u.def.aura || isSemiAce(u)) ? 3 : 1.6;
       ctx.fillRect(u.x * sx - d / 2, u.y * sy - d / 2, d, d);
     }

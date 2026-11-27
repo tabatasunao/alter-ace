@@ -2,11 +2,12 @@ import { knockBack } from './ai/knockback';
 import type { Player, Soldier, Unit } from './entities';
 import { kick } from './impact';
 import type { World } from './World';
+import { msg } from './messages';
 
 /** Whether the ace has its Beam Saber out: the active hardpoint holds a saber. */
 export function holdsBlade(P: Player): boolean {
   const slot = P.slots[P.active];
-  return slot?.kind === 'weapon' && slot.def.behavior === 'saber';
+  return slot?.def.behavior === 'saber';
 }
 
 /** Whether a unit is swinging a saber right now (a saber lunge in progress). */
@@ -37,6 +38,6 @@ export function clash(world: World, P: Player, u: Soldier): void {
     const s = r.range(160, 320);
     world.addFx({ type: 'debris', x: mx, y: my, vx: Math.cos(a) * s, vy: Math.sin(a) * s, s: r.range(2, 3.5), tone: 'accent', t: 0, life: r.range(0.25, 0.45) });
   }
-  world.addFx({ type: 'callout', x: mx, y: my - 22, t: 0, life: 0.6, text: 'CLASH', tone: 'accent', size: 15 });
+  world.addFx({ type: 'callout', x: mx, y: my - 22, t: 0, life: 0.6, msg: msg('callout.clash'), tone: 'accent', size: 15 });
   kick(world, world.catalog.battle.impact.clash);
 }

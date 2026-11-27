@@ -8,6 +8,5 @@ export class CleanupSystem implements System {
     let kept = 0;
     for (let i = 0; i < units.length; i++) if (units[i]!.alive) units[kept++] = units[i]!;
     units.length = kept;
-    if (world.decoys.length) world.decoys = world.decoys.filter((d) => d.alive);
   }
 }

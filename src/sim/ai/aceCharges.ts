@@ -1,4 +1,4 @@
-import type { Soldier } from '../entities';
+import type { Soldier, Unit } from '../entities';
 import type { World } from '../World';
 
 /** Who is charging an attack at the ace, and when the last of those attacks fires. */
@@ -24,4 +24,12 @@ export function claimAceCharge(world: World, unit: Soldier, chargeTime: number):
   const fireAt = Math.max(due, ledger.lastFireAt + cfg.gap);
   ledger.lastFireAt = fireAt;
   return fireAt - due;
+}
+
+/**
+ * Extra charge time for a charged attack of `chargeTime` at `target`: 0 at anyone but the ace;
+ * at the ace, the turn's delay, or null to hold fire (no turn free).
+ */
+export function aceChargeDelay(world: World, unit: Soldier, target: Unit, chargeTime: number): number | null {
+  return target.kind === 'player' ? claimAceCharge(world, unit, chargeTime) : 0;
 }

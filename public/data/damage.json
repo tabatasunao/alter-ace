@@ -1,8 +1,8 @@
 {
   "types": [
-    { "id": "kinetic", "name": "Kinetic" },
-    { "id": "beam", "name": "Beam" },
-    { "id": "blast", "name": "Blast" }
+    { "id": "kinetic", "name": "Kinetic", "trait": "Fastest fire" },
+    { "id": "beam", "name": "Beam", "trait": "Longest reach" },
+    { "id": "blast", "name": "Blast", "trait": "Homing" }
   ],
   "armor": [
     { "id": "standard", "name": "Standard", "vs": { "kinetic": 1, "beam": 1, "blast": 1 } },

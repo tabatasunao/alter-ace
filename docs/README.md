@@ -7,7 +7,7 @@ Documentation for ALTER, a top-down 2D real-time mass battle game. All pages des
 | Page | Contents |
 | --- | --- |
 | [game.md](game.md) | Overview, sortie flow, ranks, controls, hangar, HUD, visual legend |
-| [weapons.md](weapons.md) | The ace's hardpoints, 9 weapons, 4 tools, 3 frames, 6 aim modes, damage types, super release |
+| [weapons.md](weapons.md) | The ace's hardpoints, 6 weapons, frame build, 6 aim modes, damage types, Full Arms |
 | [units.md](units.md) | AI unit classes, AI behavior, hunters, stalking and packs, deployment and reinforcements |
 | [mechanics.md](mechanics.md) | Damage rules, shields, stuns, movement, dash, statuses, firing, missiles, battle flow, determinism |
 | [reference.md](reference.md) | Every value, generated from `public/data/*.json` |

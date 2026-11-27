@@ -3,36 +3,54 @@
  * Gameplay numbers live in those files; code reads them through the Catalog.
  *
  * Extension points are named by string fields that select a strategy in a registry:
- *   WeaponDef.behavior → src/sim/weapons/registry.ts
- *   ToolDef.effect     → src/sim/tools/registry.ts
+ *   WeaponDef.behavior → src/sim/weapons/registry.ts (aim feedback: src/render/painters/weaponOverlays.ts)
  *   AimModeDef.strategy→ src/sim/targeting/aimStrategies.ts
- *   UnitClassDef.shape → src/render/painters/unitPainters.ts
+ *   UnitClassDef.shape, enemyShape → src/render/painters/unitPainters.ts
  *   UnitWeaponDef.behavior → src/sim/ai/weapons/registry.ts
  *   MovementDef.model  → src/sim/movement/registry.ts
  */
 
 // ---------- Frames ----------
 
+/** The frame stats the player spends points on. */
+export type FrameStat = 'speed' | 'hp' | 'reload' | 'fireRate' | 'dash';
+
+/** Every frame stat, in the hangar's order. */
+export const FRAME_STATS: readonly FrameStat[] = ['speed', 'hp', 'reload', 'fireRate', 'dash'];
+
+/** Points on each stat (0 to `maxPerStat`). */
+export type FrameBuild = Record<FrameStat, number>;
+
+export interface FrameStatDef {
+  label: string;
+  /** The stat's value with no points and with `maxPerStat` points; points in between scale it linearly. */
+  min: number;
+  max: number;
+}
+
+/**
+ * The frame build (frames.json): `points` to spend, at most `maxPerStat` on one stat. `speed` is top
+ * speed, `hp` max HP, `reload` the reload time multiplier, `fireRate` the time-between-shots
+ * multiplier and `dash` the dash recharge in seconds.
+ */
+export interface FrameBuildData {
+  points: number;
+  maxPerStat: number;
+  stats: Record<FrameStat, FrameStatDef>;
+  presets: { name: string; build: FrameBuild }[];
+}
+
+/** A frame as the battle uses it, made from a build and the player's name for it (Catalog.frameFor). */
 export interface FrameDef {
-  id: string;
-  code: string;
   name: string;
-  type: string;
   speed: number;
   hp: number;
   /** Multiplies magazine reload time. */
   reloadMul: number;
   /** Multiplies the time between shots. */
   rateMul: number;
-  /** Multiplies tool recharge time. */
-  toolMul: number;
   /** Dash recharge in seconds. */
   dashCd: number;
-  desc: string;
-}
-
-export interface FramesData {
-  frames: FrameDef[];
 }
 
 // ---------- Damage types and armor ----------
@@ -40,6 +58,8 @@ export interface FramesData {
 export interface DamageTypeDef {
   id: string;
   name: string;
+  /** What weapons of this type do best within their role (shown in the hangar). */
+  trait: string;
 }
 
 /** How hard each damage type hits a unit class wearing this armor (1 = normal). */
@@ -74,21 +94,17 @@ interface WeaponBase {
   burstArc?: number;
   /** Keeps firing during a dash (other weapons hold fire). */
   fireWhileDashing?: boolean;
+  /** While this weapon is active the battle camera's zoom is multiplied by this (below 1 zooms out). */
+  viewZoom?: number;
   /**
    * Time between shots at the ace's top speed, as a multiple of `interval` (1 at a standstill,
    * linear between): below 1, the weapon fires faster on the move.
    */
   movingFireInterval?: number;
-  /**
-   * Spin-up: the fire rate rises from × `start` to × `top` over `upTime` s of continuous fire, and
-   * falls back over `downTime` s once it stops (a dash or switching weapons stops it).
-   */
-  spin?: { start: number; top: number; upTime: number; downTime: number };
-  /**
-   * Heat instead of a magazine: `mag` is the shots to overheat and `reload` the overheat lockout.
-   * Heat falls by `coolPerSecond` shots' worth per second once it has not fired for `coolDelay` s.
-   */
-  heat?: { coolPerSecond: number; coolDelay: number };
+  /** Time between shots while Full Arms runs, as a multiple of `interval` (0.5 = twice as fast). Default 1. */
+  fullArmsFireInterval?: number;
+  /** Camera zoom while the ace lunges with this weapon, as a multiple (it holds for `camera.swingHold` after). Default 1. */
+  swingZoom?: number;
 }
 
 export interface BulletWeapon extends WeaponBase {
@@ -106,28 +122,54 @@ export interface BeamWeapon extends WeaponBase {
   radius: number;
 }
 
+/**
+ * Steady aim: the shot's damage multiplier falls linearly from `still` (at rest) to `moving` (at top
+ * speed). Under `fullBelow` of top speed the shot is at full strength: `still` × `fullBonus`.
+ */
+export interface SteadyAim {
+  still: number;
+  moving: number;
+  /** Speed share (0–1) under which the shot is at full strength. */
+  fullBelow: number;
+  fullBonus: number;
+}
+
 export interface RailWeapon extends WeaponBase {
   behavior: 'rail';
   hitWidth: number;
-  /** Steady aim: damage × `still` when the ace is at a standstill, × `moving` at its top speed (linear between). */
-  steady?: { still: number; moving: number };
+  /** Steady aim: damage by the ace's speed, with a full-strength bonus near rest. */
+  steady?: SteadyAim;
 }
 
 /**
- * Pellets every shot, and every `blastEvery`-th shot of a magazine also a point-blank blast
- * (Breach Cannon): centered `blast.offset` in front, radius `blast.radius`, `blast.dmg` falling
- * off to half at the edge, knocking enemies away at `blast.push` (slowing over `blast.pushTime`)
- * and kicking the ace back at `recoil`.
+ * A spread of `pellets` every shot (Shotgun), each speed varied by ± `speedJitter`. A pellet that
+ * hits an enemy ALTER knocks it back at `knock.push`, slowing over `knock.time`. Each shot jolts
+ * the ace `jolt.distance` back over `jolt.time`, then leaves it sliding back at `jolt.carry`.
  */
-export interface BreachWeapon extends WeaponBase {
-  behavior: 'breach';
+export interface ShotgunWeapon extends WeaponBase {
+  behavior: 'shotgun';
   speed: number;
   spread: number;
   pellets: number;
   speedJitter: number;
-  blastEvery: number;
-  blast: { radius: number; offset: number; dmg: number; push: number; pushTime: number };
-  recoil: number;
+  knock: Knock;
+  jolt: { distance: number; time: number; carry: number };
+}
+
+/** A knockback: a push speed, slowing linearly to a stop over `time` s. */
+export interface Knock {
+  push: number;
+  time: number;
+}
+
+/**
+ * One target, one huge hit (Sniper Rifle): a sight line shows for the last `sight` s before each
+ * shot, then a beam (`beamWidth`) strikes the target.
+ */
+export interface SniperWeapon extends WeaponBase {
+  behavior: 'sniper';
+  sight: number;
+  beamWidth: number;
 }
 
 export interface MissileWeapon extends WeaponBase {
@@ -156,6 +198,8 @@ export interface MortarWeapon extends WeaponBase {
   splashDmg: number;
   flight: number;
   leadFactor: number;
+  /** In flight, the landing point moves toward where the target will be at up to this speed. */
+  track: number;
   /** The stun at the center of each landing (see StunSpec). */
   stun: StunSpec;
 }
@@ -187,75 +231,13 @@ export type WeaponDef =
   | MissileWeapon
   | MortarWeapon
   | SaberWeapon
-  | BreachWeapon;
+  | ShotgunWeapon
+  | SniperWeapon;
 
 export type WeaponBehaviorName = WeaponDef['behavior'];
 
 export interface WeaponsData {
   weapons: WeaponDef[];
-}
-
-// ---------- Tools ----------
-
-interface ToolBase {
-  id: string;
-  name: string;
-  desc: string;
-  /** What the tool does during super release (shown on its card). */
-  releaseDesc: string;
-  cooldown: number;
-}
-
-/** During super release: heals `healFraction` of max HP over the release. */
-export interface RepairTool extends ToolBase {
-  effect: 'repair';
-  healFraction: number;
-  duration: number;
-}
-
-/** During super release: a burst at the start and every `releaseInterval` s. */
-export interface EmpTool extends ToolBase {
-  effect: 'emp';
-  radius: number;
-  stun: number;
-  releaseInterval: number;
-}
-
-/**
- * During super release: an afterimage decoy at the ace's position at the start and every
- * `releaseInterval` s, with `releaseHp` HP for `releaseLife` s.
- */
-export interface DecoyTool extends ToolBase {
-  effect: 'decoy';
-  hp: number;
-  life: number;
-  size: number;
-  pullRadius: number;
-  releaseInterval: number;
-  releaseHp: number;
-  releaseLife: number;
-}
-
-export interface OverboostTool extends ToolBase {
-  effect: 'overboost';
-  duration: number;
-  speedMul: number;
-  fireIntervalMul: number;
-  damageTakenMul: number;
-}
-
-export type ToolDef = RepairTool | EmpTool | DecoyTool | OverboostTool;
-export type ToolEffectName = ToolDef['effect'];
-
-export interface ToolsData {
-  tools: ToolDef[];
-}
-
-/** Anything that can go on a hardpoint. */
-export type ArmamentDef = WeaponDef | ToolDef;
-
-export function isWeapon(def: ArmamentDef): def is WeaponDef {
-  return 'behavior' in def;
 }
 
 // ---------- Aim modes ----------
@@ -289,6 +271,8 @@ interface UnitWeaponBase {
   range: number;
   /** Seconds between shots. */
   interval: number;
+  /** Multiplies this weapon's damage against AI units (not the ace). Default 1. */
+  armyMul?: number;
 }
 
 /** Fires `pellets` projectiles of kind `projectile`, aimed ahead of a moving target. */
@@ -333,6 +317,12 @@ export interface MissileUnitWeapon extends UnitWeaponBase {
   launchAngle?: number;
   /** Seconds the missiles fly their launch direction before they start homing (default 0). */
   homingDelay?: number;
+  /**
+   * Terminal correction: when a missile first comes within `range` of its target it stops weaving
+   * and turns at `turnRate` for `time` seconds toward where the target is heading (`lead`: 0 = where
+   * it is, 1 = full intercept), then flies straight on (no more homing).
+   */
+  terminal?: { range: number; turnRate: number; time: number; lead: number };
 }
 
 /** Lunges at the target and slashes an arc on arrival (a semi-ace's beam saber). `range` is the lunge range. */
@@ -348,6 +338,14 @@ export interface SaberUnitWeapon extends UnitWeaponBase {
   maxLunge: number;
   /** Stops this far short of the target. */
   stopDistance: number;
+  /**
+   * Dash strike at a target beyond `range`, up to `dash.range`: the unit stands for `windup`
+   * seconds while a sight line tracks the target (frozen for the last `lock`), then dashes at
+   * `speed` to where it pointed and slashes for `dmg`. Once per `cooldown` seconds.
+   */
+  dash?: { range: number; windup: number; lock: number; speed: number; dmg: number; cooldown: number };
+  /** A hop straight back after every slash: `distance` covered in `time` seconds. */
+  retreat?: { distance: number; time: number };
 }
 
 /**
@@ -367,7 +365,7 @@ export interface LanceUnitWeapon extends UnitWeaponBase {
 }
 
 /** The effect a line attack's discharge is drawn with (an `Effect` type). */
-export type BeamLook = 'rail' | 'heavyBeam';
+export type BeamLook = 'line' | 'heavyBeam';
 
 export type UnitWeaponDef = ShotUnitWeapon | MissileUnitWeapon | LanceUnitWeapon | SaberUnitWeapon;
 export type UnitWeaponBehaviorName = UnitWeaponDef['behavior'];
@@ -382,6 +380,8 @@ export interface UnitClassDef {
   id: string;
   name: string;
   shape: string;
+  /** Replaces `shape` for units of this class in the enemy army. */
+  enemyShape?: string;
   size: number;
   hp: number;
   speed: number;
@@ -408,6 +408,18 @@ export interface UnitClassDef {
    * `follow` of it, until it dies.
    */
   rally?: { min: number; max: number; radius: number; follow: number };
+  /**
+   * Holds a place relative to its own front line, in whatever direction the fight faces. Against
+   * the nearest hostile in sight, its depth is its own distance to that hostile minus the nearest
+   * teammate's (negative when it is ahead of them). It keeps the depth within `depth` ± `band`:
+   * backing away from the hostile when too far forward, closing in when too far back.
+   */
+  holdLine?: { depth: number; band: number };
+  /**
+   * Shoots the ace whenever it is within the weapon's range, otherwise the nearest hostile. Its
+   * missiles also go for the ace first: they switch to it when it comes within their retarget radius.
+   */
+  aceFirst?: boolean;
   aura?: { radius: number; fireRateMul: number };
   /**
    * Heal pulse: every `interval` seconds, units of the same army within `radius` (and the ace,
@@ -474,7 +486,7 @@ export interface ArmiesData {
 export interface LoadoutData {
   slots: number;
   enemyCount: { min: number; max: number; step: number };
-  defaultLoadout: { frame: string; slots: string[]; aim: string; enemies: number };
+  defaultLoadout: { name: string; build: FrameBuild; slots: string[]; aim: string; enemies: number };
   /** Weapon medals for career kills with one weapon, lowest first. */
   medals: { name: string; kills: number }[];
 }
@@ -562,8 +574,7 @@ export interface BattleData {
     dashDuration: number;
     dashIframes: number;
     /**
-     * Super release (Space): every weapon hardpoint fires at once for `duration` s and every tool
-     * hardpoint runs its release effect. It opens with a burst: each weapon launches `openingBurst`
+     * Full Arms (Space): every weapon hardpoint fires at once for `duration` s. It opens with a burst: each weapon launches `openingBurst`
      * seconds' worth of its fire at once in random directions (2.5 = 150% more than a second of fire).
      * The opening gives `openingIframes` s of invulnerability; for the whole release the ace takes
      * × `damageTakenMul` damage. It needs a full gauge (0–1), which `charge` fills.
@@ -575,6 +586,11 @@ export interface BattleData {
       damageTakenMul: number;
       charge: ReleaseCharge;
     };
+    /**
+     * The launch at the start of a sortie: the camera starts at `zoom` × the battle zoom, and the
+     * ace boosts east at `speed` × its top speed when the launch sequence ends.
+     */
+    launch: { speed: number; zoom: number };
     /** A close dodge: an attack that touches the ace during a dash's invulnerability. Once per dash. */
     dodge: {
       /** Share of the frame's dash recharge given back (1 = dash ready again). */
@@ -607,6 +623,8 @@ export interface BattleData {
     followRate: number;
     demoFollowRate: number;
     zoomRate: number;
+    /** Seconds a weapon's `swingZoom` holds after a lunge ends. */
+    swingHold: number;
     battleZoom: ZoomFit;
     demoZoom: ZoomFit;
   };
@@ -616,6 +634,8 @@ export interface BattleData {
 
 /** How the release gauge (0–1) fills while no release is running. */
 export interface ReleaseCharge {
+  /** The gauge at sortie start, 0–1. */
+  start: number;
   /** Per enemy the ace destroys. */
   perKill: number;
   /** Kills within this distance of the ace count `closeKillMul` times. */
@@ -662,6 +682,12 @@ export interface ImpactData {
   clash: ImpactDef;
   /** One of the ace's melee slashes connects. */
   slash: ImpactDef;
+  /** A full-strength Railgun shot (steady aim) hits. */
+  railFull: ImpactDef;
+  /** Each Shotgun shot. */
+  shotgun: ImpactDef;
+  /** The ace boosts off at the end of the launch sequence. */
+  launch: ImpactDef;
   /** The ace is destroyed; then the battle runs at × `slowScale` speed for `slow` s. */
   aceDeath: ImpactDef & { slow: number; slowScale: number };
   /** A blast of at least `minRadius` within `range` of the ace; the shake fades with distance. */
@@ -693,10 +719,9 @@ export interface RatingData {
 // ---------- Everything ----------
 
 export interface GameData {
-  frames: FramesData;
+  frames: FrameBuildData;
   damage: DamageData;
   weapons: WeaponsData;
-  tools: ToolsData;
   aimModes: AimModesData;
   unitWeapons: UnitWeaponsData;
   units: UnitsData;

@@ -1,5 +1,6 @@
 import { activePlayer, type System } from '../System';
 import type { World } from '../World';
+import { msg } from '../messages';
 
 /**
  * Banners that praise the ace: every kill milestone, and a streak of kills in a short window
@@ -21,7 +22,7 @@ export class PraiseSystem implements System {
     const reached = Math.floor(kills / cfg.killMilestone);
     if (reached > this.milestone) {
       this.milestone = reached;
-      world.banner(`${reached * cfg.killMilestone} kills`, 'good', true);
+      world.banner(msg('banner.killMilestone', { n: reached * cfg.killMilestone }), 'good', true);
     }
 
     if (P.release) {
@@ -40,7 +41,7 @@ export class PraiseSystem implements System {
     const streak = kills - this.samples[this.head]!.kills;
     if (streak >= s.kills && world.t >= this.quietUntil) {
       this.quietUntil = world.t + s.cooldown;
-      world.banner(`${streak} down in ${s.window} s`, 'good', true);
+      world.banner(msg('banner.streak', { n: streak, s: s.window }), 'good', true);
     }
   }
 }

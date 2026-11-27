@@ -9,7 +9,7 @@ const REST_SPEED = 1;
  * - thrusting accelerates toward top speed over `thrustTime`, and turning swings the
  *   velocity around (sideways drift bleeds off at `lateralDrag`);
  * - letting go coasts, slowing at `drag`;
- * - speed above the cap (e.g. when Overboost ends) bleeds off at `drag` instead of snapping.
+ * - speed above the cap (e.g. after a dash or a launch) bleeds off at `drag` instead of snapping.
  */
 export const thruster: MovementModel<ThrusterMovement> = {
   steer({ player: P, input, topSpeed, dt, config: c }) {

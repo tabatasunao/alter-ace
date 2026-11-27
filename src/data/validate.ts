@@ -1,3 +1,4 @@
+import { FRAME_STATS } from './types';
 import type { GameData } from './types';
 
 function duplicates(ids: readonly string[]): string[] {
@@ -22,9 +23,7 @@ export function validateGameData(d: GameData): string[] {
   };
 
   const lists: [string, readonly { id: string }[]][] = [
-    ['frames', d.frames.frames],
     ['weapons', d.weapons.weapons],
-    ['tools', d.tools.tools],
     ['aimModes.modes', d.aimModes.modes],
     ['unitWeapons.weapons', d.unitWeapons.weapons],
     ['units.classes', d.units.classes],
@@ -34,22 +33,22 @@ export function validateGameData(d: GameData): string[] {
     for (const id of duplicates(list.map((x) => x.id))) errors.push(`${name}: duplicate id "${id}"`);
   }
 
-  const armamentIds = [...d.weapons.weapons.map((w) => w.id), ...d.tools.tools.map((t) => t.id)];
-  for (const id of duplicates(armamentIds)) errors.push(`id "${id}" is used by both a weapon and a tool`);
   for (const w of d.weapons.weapons) {
     if (w.movingFireInterval !== undefined) check(w.movingFireInterval > 0, `weapons.${w.id}.movingFireInterval must be > 0`);
-    if (w.spin) check(w.spin.start > 0 && w.spin.top > 0 && w.spin.upTime > 0 && w.spin.downTime > 0, `weapons.${w.id}.spin: values must be > 0`);
-    if (w.heat) check(w.mag !== null && w.heat.coolPerSecond >= 0 && w.heat.coolDelay >= 0, `weapons.${w.id}.heat: needs a mag (the shots to overheat) and coolPerSecond, coolDelay >= 0`);
-    if (w.behavior === 'rail' && w.steady) check(w.steady.still > 0 && w.steady.moving > 0, `weapons.${w.id}.steady: values must be > 0`);
-    if (w.behavior === 'breach') {
-      check(Number.isInteger(w.blastEvery) && w.blastEvery >= 1 && w.mag !== null, `weapons.${w.id}: blastEvery must be a whole number >= 1, with a magazine`);
-      check(w.blast.radius > 0 && w.blast.dmg >= 0 && w.blast.push >= 0 && w.blast.pushTime > 0 && w.recoil >= 0, `weapons.${w.id}.blast: need radius > 0, pushTime > 0 and dmg, push, recoil >= 0`);
+    if (w.fullArmsFireInterval !== undefined) check(w.fullArmsFireInterval > 0, `weapons.${w.id}.fullArmsFireInterval must be > 0`);
+    if (w.viewZoom !== undefined) check(w.viewZoom > 0, `weapons.${w.id}.viewZoom must be > 0`);
+    if (w.behavior === 'rail' && w.steady) {
+      const st = w.steady;
+      check(st.still > 0 && st.moving > 0, `weapons.${w.id}.steady: still and moving must be > 0`);
+      check(st.fullBelow >= 0 && st.fullBelow <= 1 && st.fullBonus >= 1, `weapons.${w.id}.steady: fullBelow must be 0–1 and fullBonus >= 1`);
     }
-    if (w.behavior === 'mortar') check(w.stun.radius > 0 && w.stun.time > 0 && w.stun.exposedMul >= 1, `weapons.${w.id}.stun: need radius > 0, time > 0 and exposedMul >= 1`);
-  }
-  for (const t of d.tools.tools) {
-    if (t.effect === 'emp') check(t.releaseInterval > 0, `tools.${t.id}.releaseInterval must be > 0`);
-    if (t.effect === 'decoy') check(t.releaseInterval > 0 && t.releaseHp > 0 && t.releaseLife > 0, `tools.${t.id}: releaseInterval, releaseHp and releaseLife must be > 0`);
+    if (w.behavior === 'shotgun') check(w.pellets >= 1 && w.knock.push >= 0 && w.knock.time > 0 && w.jolt.distance >= 0 && w.jolt.time > 0 && w.jolt.carry >= 0, `weapons.${w.id}: need pellets >= 1, knock.push >= 0, knock.time > 0, jolt.distance and jolt.carry >= 0 and jolt.time > 0`);
+    if (w.swingZoom !== undefined) check(w.swingZoom > 0, `weapons.${w.id}.swingZoom must be > 0`);
+    if (w.behavior === 'sniper') check(w.sight >= 0 && w.sight < w.interval && w.beamWidth > 0, `weapons.${w.id}: need 0 <= sight < interval and beamWidth > 0`);
+    if (w.behavior === 'mortar') {
+      check(w.stun.radius > 0 && w.stun.time > 0 && w.stun.exposedMul >= 1, `weapons.${w.id}.stun: need radius > 0, time > 0 and exposedMul >= 1`);
+      check(w.track >= 0, `weapons.${w.id}.track must be >= 0`);
+    }
   }
 
   // Damage types and armor
@@ -82,6 +81,7 @@ export function validateGameData(d: GameData): string[] {
     const at = `unitWeapons.${w.id}`;
     check(damageTypeIds.has(w.damageType), `${at}.damageType: unknown damage type "${w.damageType}"`);
     check(w.interval > 0 && w.range > 0 && w.dmg >= 0, `${at}: interval and range must be > 0, dmg >= 0`);
+    check(w.armyMul === undefined || w.armyMul > 0, `${at}.armyMul must be > 0`);
     if (w.behavior === 'shot') {
       check(['bullet', 'beam', 'shell'].includes(w.projectile), `${at}.projectile must be "bullet", "beam" or "shell"`);
       check(w.speed > 0, `${at}.speed must be > 0`);
@@ -92,8 +92,14 @@ export function validateGameData(d: GameData): string[] {
       check(w.speed > 0 && w.life > 0, `${at}: speed and life must be > 0`);
       check(!w.weave || (w.weave.amplitude >= 0 && w.weave.frequency >= 0), `${at}.weave: amplitude and frequency must be >= 0`);
       check(w.homingDelay === undefined || (w.homingDelay >= 0 && w.homingDelay < w.life), `${at}: need 0 <= homingDelay < life`);
+      check(!w.terminal || (w.terminal.range > 0 && w.terminal.time > 0 && w.terminal.turnRate >= w.turnRate), `${at}.terminal: need range and time > 0, and turnRate >= the weapon's turnRate`);
+      check(!w.terminal || (w.terminal.lead >= 0 && w.terminal.lead <= 1), `${at}.terminal.lead must be in 0..1`);
     } else if (w.behavior === 'saber') {
       check(w.slash > 0 && w.lungeSpeed > 0 && w.maxLunge > 0, `${at}: slash, lungeSpeed and maxLunge must be > 0`);
+      const d = w.dash;
+      check(!d || (d.range > w.range && d.speed > 0 && d.cooldown > 0 && d.dmg >= 0), `${at}.dash: need range > the weapon's range, speed and cooldown > 0, dmg >= 0`);
+      check(!d || (d.windup > 0 && d.lock >= 0 && d.lock < d.windup), `${at}.dash: need windup > 0 and 0 <= lock < windup`);
+      check(!w.retreat || (w.retreat.distance >= 0 && w.retreat.time > 0), `${at}.retreat: need distance >= 0 and time > 0`);
     } else if (w.behavior === 'lance') {
       check(w.charge > 0 && w.lock >= 0 && w.lock < w.charge, `${at}: need charge > 0 and 0 <= lock < charge`);
       check(w.interval >= w.charge, `${at}.interval must be >= charge`);
@@ -107,6 +113,7 @@ export function validateGameData(d: GameData): string[] {
     check(c.kiteDistance === undefined || c.kiteDistance > 0, `units.${c.id}.kiteDistance must be > 0`);
     check(c.aceHitMul === undefined || c.aceHitMul > 0, `units.${c.id}.aceHitMul must be > 0`);
     check(c.nearAce === undefined || c.nearAce > 0, `units.${c.id}.nearAce must be > 0`);
+    check(!c.holdLine || c.holdLine.band > 0, `units.${c.id}.holdLine.band must be > 0`);
     if (c.rally) {
       const r = c.rally;
       check(Number.isInteger(r.min) && Number.isInteger(r.max) && r.min >= 0 && r.max >= r.min, `units.${c.id}.rally: need whole numbers 0 <= min <= max`);
@@ -139,26 +146,44 @@ export function validateGameData(d: GameData): string[] {
   for (const id of Object.keys(a.minimums)) check(classIds.has(id), `armies.minimums: unknown unit class "${id}"`);
   check(a.battle.enemies.groups > 0 && a.battle.allies.groups > 0, 'armies.battle: groups must be > 0');
 
+  // Frame build
+  const fb = d.frames;
+  check(fb.points > 0 && Number.isInteger(fb.maxPerStat) && fb.maxPerStat > 0, 'frames: need points > 0 and a whole maxPerStat > 0');
+  for (const s of FRAME_STATS) {
+    const st = fb.stats?.[s];
+    check(!!st && Number.isFinite(st.min) && Number.isFinite(st.max), `frames.stats.${s}: needs min and max`);
+  }
+  check(fb.stats.speed.min > 0 && fb.stats.hp.min > 0 && fb.stats.reload.max > 0 && fb.stats.fireRate.max > 0 && fb.stats.dash.max > 0, 'frames.stats: speed, HP and the multipliers must stay above 0');
+  const checkBuild = (build: Record<string, number> | undefined, at: string) => {
+    if (!build) return check(false, `${at} is missing`);
+    let total = 0;
+    for (const s of FRAME_STATS) {
+      const n = build[s];
+      check(Number.isInteger(n) && n! >= 0 && n! <= fb.maxPerStat, `${at}.${s} must be a whole number from 0 to ${fb.maxPerStat}`);
+      total += n ?? 0;
+    }
+    check(total <= fb.points, `${at} spends ${total} points; the frame has ${fb.points}`);
+  };
+  for (const p of fb.presets ?? []) checkBuild(p.build, `frames.presets "${p.name}"`);
+
   // Loadout
   const l = d.loadout;
-  const frameIds = new Set(d.frames.frames.map((f) => f.id));
   const weaponIds = new Set(d.weapons.weapons.map((w) => w.id));
   const aimIds = new Set(d.aimModes.modes.map((m) => m.id));
   check(l.slots > 0, 'loadout.slots must be > 0');
   check(l.enemyCount.min <= l.enemyCount.max, 'loadout.enemyCount: min must be <= max');
-  check(frameIds.has(l.defaultLoadout.frame), `loadout.defaultLoadout.frame: unknown frame "${l.defaultLoadout.frame}"`);
+  checkBuild(l.defaultLoadout.build, 'loadout.defaultLoadout.build');
+  check(typeof l.defaultLoadout.name === 'string' && l.defaultLoadout.name.trim().length > 0, 'loadout.defaultLoadout.name must be a non-empty string');
   check(aimIds.has(l.defaultLoadout.aim), `loadout.defaultLoadout.aim: unknown aim mode "${l.defaultLoadout.aim}"`);
   check(l.defaultLoadout.slots.length === l.slots, `loadout.defaultLoadout must fill all ${l.slots} slots`);
-  check(l.defaultLoadout.slots.some((id) => weaponIds.has(id)), 'loadout.defaultLoadout needs at least one weapon');
-  for (const id of l.defaultLoadout.slots) {
-    check(armamentIds.includes(id), `loadout.defaultLoadout: unknown weapon or tool "${id}"`);
-  }
+  for (const id of l.defaultLoadout.slots) check(weaponIds.has(id), `loadout.defaultLoadout: unknown weapon "${id}"`);
   for (const id of duplicates(l.defaultLoadout.slots)) errors.push(`loadout.defaultLoadout: "${id}" is equipped twice`);
 
   // Battle
   const b = d.battle;
   check(b.world.width > 0 && b.world.height > 0 && b.world.cellSize > 0, 'battle.world: sizes must be > 0');
   check(b.camera.minZoom > 0 && b.camera.minZoom <= b.camera.maxZoom, 'battle.camera: need 0 < minZoom <= maxZoom');
+  check(b.camera.swingHold >= 0, 'battle.camera.swingHold must be >= 0');
   const ca = b.ai.closeAim;
   check(ca.range >= 0 && ca.lead >= 0 && ca.lead <= 1 && ca.spread >= 0 && ca.spread <= 1 && ca.fireRate >= 1, 'battle.ai.closeAim: need range >= 0, lead and spread in 0..1, and fireRate >= 1');
   const ac = b.ai.aceCharges;
@@ -177,14 +202,16 @@ export function validateGameData(d: GameData): string[] {
   check(sr.damageTakenMul >= 0, 'battle.player.superRelease.damageTakenMul must be >= 0');
   const ch = sr.charge;
   check(ch.perKill >= 0 && ch.perSecond >= 0 && ch.closeRadius >= 0 && ch.closeKillMul >= 0, 'battle.player.superRelease.charge: values must be >= 0');
+  check(ch.start >= 0 && ch.start <= 1, 'battle.player.superRelease.charge.start must be 0–1');
   check(ch.perKill > 0 || ch.perSecond > 0, 'battle.player.superRelease.charge: perKill or perSecond must be > 0, or the gauge never refills');
+  check(b.player.launch.speed >= 0 && b.player.launch.zoom > 0, 'battle.player.launch: need speed >= 0 and zoom > 0');
   const dg = b.player.dodge;
   check(dg.dashRefund >= 0 && dg.dashRefund <= 1 && dg.releaseCharge >= 0, 'battle.player.dodge: need 0 <= dashRefund <= 1 and releaseCharge >= 0');
 
   const im = b.impact;
   check(im.freezeGap >= 0 && im.shakeTime > 0 && im.flashTime > 0 && im.hurtTime > 0, 'battle.impact: need freezeGap >= 0 and shakeTime, flashTime and hurtTime > 0');
   check(b.clash.acePush >= 0 && b.clash.unitPush >= 0 && b.clash.pushTime > 0, 'battle.clash: need acePush, unitPush >= 0 and pushTime > 0');
-  for (const key of ['aceHit', 'bigKill', 'heavyHit', 'release', 'dodge', 'slash', 'clash', 'aceDeath', 'blast', 'beam'] as const) {
+  for (const key of ['aceHit', 'bigKill', 'heavyHit', 'release', 'dodge', 'slash', 'railFull', 'shotgun', 'launch', 'clash', 'aceDeath', 'blast', 'beam'] as const) {
     const k = im[key];
     const hurt = k.hurt ?? 0;
     check(k.freeze >= 0 && k.shake >= 0 && k.flash >= 0 && k.flash <= 1 && hurt >= 0 && hurt <= 1, `battle.impact.${key}: need freeze >= 0, shake >= 0, and flash and hurt in 0..1`);

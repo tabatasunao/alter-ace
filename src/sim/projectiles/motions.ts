@@ -9,6 +9,8 @@ import {
   type ShotOfKind,
   type Unit,
 } from '../entities';
+import { aimAhead } from '../ai/aim';
+import { knockBack } from '../ai/knockback';
 import { stunBlast } from '../attacks';
 import { noteBlockedHit } from '../dodge';
 import type { World } from '../World';
@@ -39,6 +41,10 @@ export const flying: ProjectileMotion<FlyingShot> = {
     const u = firstHit(world, p, ox, oy);
     if (u) {
       world.combat.damage(u, p.dmg, p);
+      if (p.knock && u.kind === 'soldier' && u.alive) {
+        const v = Math.hypot(p.vx, p.vy) || 1;
+        knockBack(world, u, (p.vx / v) * p.knock.push, (p.vy / v) * p.knock.push, p.knock.time);
+      }
       if (p.splash) {
         world.combat.explode(p.x, p.y, p.splash, p.splashDmg, p.team, p);
         return true;
@@ -61,10 +67,30 @@ export const flying: ProjectileMotion<FlyingShot> = {
   },
 };
 
-/** Arcs to a fixed point and explodes after its flight time. Keeps x, y on its current ground point. */
+/**
+ * Arcs to its landing point and explodes after its flight time. Keeps x, y on its current ground
+ * point. A shell with a target steers its landing point toward where the target will be.
+ */
 export const lobbed: ProjectileMotion<LobbedShot> = {
   step(p, dt, world) {
     p.t += dt;
+    const tgt = p.target;
+    if (tgt && tgt.alive && p.track > 0) {
+      const left = Math.max(0, p.flight - p.t);
+      const ax = clamp(tgt.x + tgt.vx * left * p.lead, 0, world.width);
+      const ay = clamp(tgt.y + tgt.vy * left * p.lead, 0, world.height);
+      const dx = ax - p.tx;
+      const dy = ay - p.ty;
+      const d = Math.hypot(dx, dy);
+      const step = p.track * dt;
+      if (d <= step) {
+        p.tx = ax;
+        p.ty = ay;
+      } else {
+        p.tx += (dx / d) * step;
+        p.ty += (dy / d) * step;
+      }
+    }
     const k = Math.min(1, p.t / p.flight);
     p.x = p.sx + (p.tx - p.sx) * k;
     p.y = p.sy + (p.ty - p.sy) * k;
@@ -92,15 +118,36 @@ export function motionFor(p: Projectile): ProjectileMotion {
 function steer(p: FlyingShot, dt: number, world: World): void {
   const h = p.homing!;
   if (h.armAt !== undefined && p.life > h.armAt) return; // still in its launch phase
+  if (h.terminalLeft !== undefined && h.terminalLeft <= 0) return; // committed: flies straight on
+  const prefer = h.prefer;
+  if (prefer && prefer.alive && p.target !== prefer && h.terminalLeft === undefined && (prefer.x - p.x) ** 2 + (prefer.y - p.y) ** 2 <= h.retargetRadius * h.retargetRadius) {
+    p.target = prefer;
+  }
   if (!p.target || !p.target.alive) {
     p.target = h.spread ? randomHostileNear(world, p, h.retargetRadius) : world.grid.nearestHostile(p.x, p.y, p.team, h.retargetRadius);
   }
   if (!p.target) return;
-  let want = Math.atan2(p.target.y - p.y, p.target.x - p.x);
+  const dx = p.target.x - p.x;
+  const dy = p.target.y - p.y;
+  let want = Math.atan2(dy, dx);
+  let turnRate = h.turnRate;
+  let weave = true;
+  if (h.terminal) {
+    // Terminal correction: one hard turn at the target when it first comes within range, then straight on.
+    if (h.terminalLeft === undefined && dx * dx + dy * dy < h.terminal.range * h.terminal.range) h.terminalLeft = h.terminal.time;
+    if (h.terminalLeft !== undefined) {
+      h.terminalLeft -= dt;
+      turnRate = h.terminal.turnRate;
+      weave = false;
+      // Aimed where the target is heading: a steady mover is hit, a change of course slips the line.
+      const flight = Math.hypot(dx, dy) / Math.max(1, Math.hypot(p.vx, p.vy));
+      want = aimAhead(p.x, p.y, p.target, flight, h.terminal.lead);
+    }
+  }
   // Weaving swarm: a sine swing around the pursuit line, clocked by the missile's remaining life.
-  if (h.weave) want += h.weave.amplitude * Math.sin(h.weave.phase + p.life * h.weave.frequency * TAU);
+  if (h.weave && weave) want += h.weave.amplitude * Math.sin(h.weave.phase + p.life * h.weave.frequency * TAU);
   let heading = Math.atan2(p.vy, p.vx);
-  const turn = h.turnRate * dt;
+  const turn = turnRate * dt;
   heading += clamp(wrapAngle(want - heading), -turn, turn);
   const speed = Math.min(p.maxSpeed, Math.hypot(p.vx, p.vy) + h.acceleration * dt);
   p.vx = Math.cos(heading) * speed;

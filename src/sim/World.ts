@@ -3,12 +3,13 @@ import type { Point } from '../core/math';
 import type { Random } from '../core/random';
 import type { Catalog } from '../data/catalog';
 import { Combat } from './Combat';
-import type { Decoy, Effect, Player, Projectile, Unit } from './entities';
+import type { Effect, Player, Projectile, Unit } from './entities';
 import type { BannerTone, GameEvents } from './events';
 import type { AceChargeLedger } from './ai/aceCharges';
 import { newImpactState, type ImpactState } from './impact';
 import { SpatialGrid } from './SpatialGrid';
 import { UnitFactory } from './UnitFactory';
+import { msg, type Message } from './messages';
 
 export type WorldMode = 'demo' | 'battle';
 
@@ -52,7 +53,6 @@ export class World {
   units: Unit[] = [];
   shots: Projectile[] = [];
   fx: Effect[] = [];
-  decoys: Decoy[] = [];
   player: Player | null = null;
 
   readonly stats: BattleStats = {
@@ -126,8 +126,8 @@ export class World {
   }
 
   /** A center-screen message. A `minor` one (praise) never replaces a major one still showing. */
-  banner(text: string, tone: BannerTone = '', minor = false): void {
-    this.events.emit('banner', { text, tone, minor });
+  banner(message: Message, tone: BannerTone = '', minor = false): void {
+    this.events.emit('banner', { msg: message, tone, minor });
   }
 
   endBattle(win: boolean): void {
@@ -135,7 +135,7 @@ export class World {
     this.status.over = true;
     this.status.win = win;
     this.status.endAt = this.t;
-    this.banner(win ? 'Enemy army destroyed' : 'ALTER lost', win ? 'good' : 'warn');
+    this.banner(msg(win ? 'banner.victory' : 'banner.defeat'), win ? 'good' : 'warn');
     this.events.emit('battleEnded', { win });
   }
 }

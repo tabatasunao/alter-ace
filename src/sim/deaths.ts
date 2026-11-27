@@ -1,3 +1,4 @@
+import { textKeys } from '../data/textKeys';
 import { ENEMY, unitTone, type Hit, type Tone, type Unit } from './entities';
 import { kick, slowMotion } from './impact';
 import { chargeRelease } from './release';
@@ -24,7 +25,6 @@ export function spawnWreck(world: World, u: Unit): void {
 
 /** What a death changes in the battle: army counts, the ace's kill credit, kill banners, and defeat. */
 export function scoreDeath(world: World, u: Unit, { src, wid }: Hit): void {
-  if (u.kind === 'decoy') return;
   const s = world.stats;
   if (u.team === ENEMY) {
     s.enemyField--;
@@ -40,7 +40,7 @@ export function scoreDeath(world: World, u: Unit, { src, wid }: Hit): void {
       }
     }
     if (u.kind === 'soldier' && u.def.killBanner) {
-      world.banner(u.def.killBanner, 'good');
+      world.banner({ key: textKeys.unitKillBanner(u.def.id), fallback: u.def.killBanner }, 'good');
       if (byAce) kick(world, world.catalog.battle.impact.bigKill);
     }
   } else if (u.kind === 'player') {

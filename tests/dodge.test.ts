@@ -5,6 +5,7 @@ import { PlayerCommands } from '../src/sim/PlayerCommands';
 import { PlayerStatusSystem } from '../src/sim/systems/PlayerStatusSystem';
 import { ProjectileSystem } from '../src/sim/systems/ProjectileSystem';
 import { ARMY_HIT, arena, loadTestCatalog } from './helpers';
+import { tm } from '../src/i18n';
 
 describe('close dodge', () => {
   const catalog = loadTestCatalog();
@@ -22,7 +23,7 @@ describe('close dodge', () => {
     expect(world.stats.dodges).toBe(1);
     expect(P.dashCd).toBeCloseTo(Math.max(0, P.frame.dashCd * (1 - cfg.dashRefund)));
     expect(P.releaseCharge).toBeCloseTo(cfg.releaseCharge);
-    expect(world.fx.some((f) => f.type === 'callout' && f.text === 'DODGE')).toBe(true);
+    expect(world.fx.some((f) => f.type === 'callout' && tm(f.msg) === 'DODGE')).toBe(true);
     expect(world.impact.freeze).toBe(catalog.battle.impact.dodge.freeze);
     world.combat.damage(P, 50, ARMY_HIT);
     expect(world.stats.dodges).toBe(1);

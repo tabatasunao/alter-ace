@@ -25,6 +25,7 @@ export class SoldierAISystem implements System {
     if (u.stagger > 0) u.stagger -= dt;
     if (u.exposedT > 0) u.exposedT -= dt;
     if (u.buffT > 0) u.buffT -= dt;
+    if (u.skillCd > 0) u.skillCd -= dt;
     if (u.stunT > 0) {
       u.stunT -= dt;
       u.vx = u.vy = 0;
@@ -67,8 +68,9 @@ export class SoldierAISystem implements System {
         my = nx * u.strafe * ai.strafeSpeed;
       }
       u.cd -= dt * (u.buffT > 0 ? u.buffMul : 1);
-      if (u.cd <= 0 && d <= w.range && !u.action) {
-        if (unitBehaviorFor(w).fire({ world, unit: u, weapon: w, target: t }) === false) {
+      const behavior = unitBehaviorFor(w);
+      if (u.cd <= 0 && d <= (behavior.reach?.(w) ?? w.range) && !u.action) {
+        if (behavior.fire({ world, unit: u, weapon: w, target: t }) === false) {
           u.cd = ai.aceCharges.retry;
         } else {
           const rate = closeFireRate(closeness(t, d, ai.closeAim), ai.closeAim);

@@ -54,6 +54,16 @@ export class PlayerMovementSystem implements System {
       P.y += P.vy * dt;
     }
 
+    // A Shotgun jolt: a fixed shove that ends abruptly, on top of whatever else moved the ace.
+    if (P.jolt) {
+      const j = P.jolt;
+      const step = Math.min(dt, j.remaining);
+      P.x += j.vx * step;
+      P.y += j.vy * step;
+      j.remaining -= dt;
+      if (j.remaining <= 0) P.jolt = null;
+    }
+
     // Walls: stop at the edge and lose the velocity going into it.
     const min = cfg.edgeMargin;
     const maxX = world.width - cfg.edgeMargin;

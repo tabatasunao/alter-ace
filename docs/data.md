@@ -11,24 +11,24 @@ Every gameplay number lives in `public/data/*.json`. This page describes the fil
 
 | File | Contents |
 | --- | --- |
-| `frames.json` | The 3 frames: speed, HP, reload / fire-rate / tool multipliers, dash recharge |
-| `damage.json` | Damage types (Kinetic, Beam, Blast) and armor tables |
-| `weapons.json` | The ace's 9 weapons. `behavior` selects the firing code, `damageType` the damage type; other fields are stats |
-| `weapons.json` modifiers | Optional on any weapon: `fireWhileDashing`, `movingFireInterval` (time between shots at top speed, as a multiple), `spin` (`start`, `top`, `upTime`, `downTime`), `heat` (`coolPerSecond`, `coolDelay`; `mag` and `reload` become the shots to overheat and the lockout). Railgun: `steady` (`still`, `moving` damage multipliers). Breach Cannon (`breach`): `pellets`, `spread`, `speedJitter`, `blastEvery`, `blast` (`radius`, `offset`, `dmg`, `push`, `pushTime`), `recoil` |
-| `weapons.json` → mortar `stun` | `radius`, `time`, `exposedMul`: the stun at each landing and the damage multiplier while it lasts |
-| `tools.json` | The 4 tools. `effect` selects the code; other fields are parameters. `releaseDesc` is the card text for the tool's super release effect; EMP has `releaseInterval`, Decoy `releaseInterval`, `releaseHp` and `releaseLife` |
+| `frames.json` | The frame build: `points`, `maxPerStat`, `stats` (`speed`, `hp`, `reload`, `fireRate`, `dash`, each with a `label` and its `min` and `max` value), `presets` (a `name` and a `build`) |
+| `damage.json` | Damage types (Kinetic, Beam, Blast) with their `trait` (shown on the hangar's arsenal rows), and armor tables |
+| `weapons.json` | The ace's 6 weapons. `behavior` selects the firing code, `damageType` the damage type (the hangar groups weapons by it); other fields are stats |
+| `weapons.json` modifiers | Optional on any weapon: `fireWhileDashing`, `movingFireInterval` (time between shots at top speed, as a multiple), `fullArmsFireInterval` (time between shots while Full Arms runs, as a multiple; the Shotgun and Beam Saber have 0.5), `viewZoom` (the battle camera's zoom is multiplied by this while the weapon is active; the Sniper Rifle has 0.7), `swingZoom` (camera zoom while the ace lunges with it, held for `camera.swingHold` after; the Beam Saber has 1.12). Railgun: `steady` (`still`, `moving` damage multipliers; `fullBelow`, the speed share under which the shot is at full strength; `fullBonus`, the multiplier on `still` there). Shotgun (`shotgun`): `pellets`, `spread`, `speedJitter`, `knock` (`push`, `time`), `jolt` (`distance` and `time` of the ace's shove back per shot, then `carry`, the velocity it keeps). Sniper Rifle (`sniper`): `sight` (seconds the sight line shows before each shot), `beamWidth`. Bazooka and Missile Pod (`missile`): see the `missile` fields below; the Bazooka has `salvo` 1 and `launchAngle` 0. `mortar` behavior: `track` (landing point speed toward the target) |
+| `weapons.json` → `mortar` behavior `stun` | `radius`, `time`, `exposedMul`: the stun at each landing and the damage multiplier while it lasts |
 | `aimModes.json` | Aim modes in Q/E order, each with `strategy` and number `key`; reticle refresh interval |
-| `unitWeapons.json` | The 13 AI unit weapons. `behavior` selects the firing code (`shot`, `missile`, `lance`, `saber`) |
-| `units.json` | The 13 AI unit classes: stats, `weapon`, `shape`, `armor`, AI fields (`kiteDistance`, `huntsAce`, `nearAce`, `rally`), `aura`, `shield`, `semiAce`, `aceHitMul`, `killBanner` |
+| `unitWeapons.json` | The 14 AI unit weapons. `behavior` selects the firing code (`shot`, `missile`, `lance`, `saber`) |
+| `units.json` | The 14 AI unit classes: stats, `weapon`, `shape`, `enemyShape`, `armor`, AI fields (`kiteDistance`, `huntsAce`, `nearAce`, `rally`), `aura`, `shield`, `semiAce`, `aceHitMul`, `killBanner` |
 | `armies.json` | Army mixes, minimums, filler class, formation, deployment, reinforcements, hangar skirmish |
-| `loadout.json` | Hardpoint count, enemy-count slider range, default loadout, weapon medals (`medals`: name and career kills, lowest first) |
-| `battle.json` | World size, limits, balance values, AI tuning, ace movement, dash, regeneration, super release, close dodge, camera, alerts, impact, rating, praise |
+| `loadout.json` | Hardpoint count, enemy-count slider range, default loadout (`name`, frame `build`, `slots`, `aim`, `enemies`), weapon medals (`medals`: name and career kills, lowest first) |
+| `battle.json` | World size, limits, balance values, AI tuning, ace movement, dash, regeneration, Full Arms, close dodge, launch, camera, alerts, impact, rating, praise |
 
 ## Conventions
 
 - Distances are world units (1 unit = 1 px at zoom 1). The world is 6000 × 3400.
 - Times are seconds, speeds units per second, angles radians (except `burstArc`, in degrees).
 - A weapon `mag` of `null` means no magazine (the Beam Saber).
+- Weapon, unit class, unit weapon and preset names show in English in every language. The other text (`desc`, `blurb`, `label`, `trait`, `killBanner`, aim mode, damage type, armor and medal names) is the English text; the other languages translate it in `src/i18n/locales/<language>.json` under keys built from the id, such as `weapon.<id>.desc` and `unit.<id>.blurb`. A new or renamed entry needs a translation in each language; `tests/i18n.test.ts` fails otherwise.
 
 ## Damage types and armor (`damage.json`)
 
@@ -58,21 +58,21 @@ Each unit class carries one weapon (`units.json` → `weapon`).
 | Hornet | Missile rack | Blast | `missile` | 720 | 2 homing missiles |
 | Prism | Beam cannon | Beam | `shot` | 460 | |
 | Breacher | Scattergun | Kinetic | `shot` | 200 | 4 pellets |
-| Marksman | Long beam rifle | Beam | `shot` | 798 | Pierces 2 |
-| Circus | Micro-missile swarm | Blast | `missile` | 650 | 16 weaving missiles, launched backwards |
-| Duelist | Beam saber | Beam | `saber` | 136 | Lunge, then slash |
+| Marksman | Long beam rifle | Beam | `shot` | 798 | Pierces 2; ×4 to units |
+| Circus | Micro-missile swarm | Blast | `missile` | 650 | 16 weaving missiles, launched backwards; one hard turn near the target; ×6 to units |
+| Duelist | Beam saber | Beam | `saber` | 136 | Lunge, then slash; dash strike up to 420; hops back |
 | Healer | Beam pistol | Beam | `shot` | 270 | |
 | Commander (allied) | Beam repeater | Beam | `shot` | 460 | |
 | Commander (enemy) | Mega-beam | Beam | `lance` | 900 | Charged; hits within 28 of the line |
 
-Common fields: `dmg` (per hit, before `unitVsUnit` or `aceDamageTaken`), `range` (fires inside it; the unit approaches to about 82% of it), `interval` (seconds between shots), `damageType`.
+Common fields: `dmg` (per hit, before `unitVsUnit` or `aceDamageTaken`), `range` (fires inside it; the unit approaches to about 82% of it), `interval` (seconds between shots), `damageType`, optional `armyMul` (multiplies damage against AI units, not the ace).
 
 | Behavior | Fields |
 | --- | --- |
 | `shot` | `projectile` (`bullet`, `beam` or `shell`: look and hit radius `radius`), `speed`, `spread` (± radians), `lead` (0 = aim at the target, 1 = full intercept), optional `pellets`, `pierce` (extra units passed through), `splash`, `splashDmg` |
-| `missile` | `salvo` (missiles per shot), `launchSpeed`, `acceleration`, `speed`, `turnRate` (rad/s), `life`, `splash`, `splashDmg`. Optional `weave` (`amplitude` in radians, `frequency` in swings per second, random phase per missile), `launchAngle` (radians from the target; π = straight back), `homingDelay` (seconds before homing), `fanAngle`, `radius` (hit radius), `retargetRadius`. The ace's Missile Pod uses the same launch fields in `weapons.json` |
-| `lance` | `charge` (seconds the sight line tracks), `lock` (final seconds the line is frozen), `width` (units within this distance of the line are hit), `lead`, optional `look` (`rail`, the default fading line, or `heavyBeam`). A stun cancels the charge |
-| `saber` | `lungeSpeed`, `maxLunge` (seconds), `stopDistance`, `slash` (reach), `arcHalfAngle` (radians), `closeRange` (always hit within this). A stun ends the lunge without a slash |
+| `missile` | `salvo` (missiles per shot), `launchSpeed`, `acceleration`, `speed`, `turnRate` (rad/s), `life`, `splash`, `splashDmg`. Optional `weave` (`amplitude` in radians, `frequency` in swings per second, random phase per missile), `launchAngle` (radians from the target; π = straight back), `homingDelay` (seconds before homing), `terminal` (`range`, `turnRate`, `time`, `lead`: when a missile first comes within `range` of its target it stops weaving and turns at `turnRate` for `time` seconds toward where the target is heading, `lead` 0–1 of the full intercept, then flies straight on), `fanAngle`, `radius` (hit radius), `retargetRadius`. The ace's Missile Pod uses the same launch fields in `weapons.json` |
+| `lance` | `charge` (seconds the sight line tracks), `lock` (final seconds the line is frozen), `width` (units within this distance of the line are hit), `lead`, optional `look` (`line`, the default fading line, or `heavyBeam`). A stun cancels the charge |
+| `saber` | `lungeSpeed`, `maxLunge` (seconds), `stopDistance`, `slash` (reach), `arcHalfAngle` (radians), `closeRange` (always hit within this). Optional `dash`: a dash strike at a target beyond `range` and up to `dash.range` (`windup` seconds standing while the aim line tracks, frozen for the last `lock`; then a dash at `speed` and a slash for `dmg`; once per `cooldown`). Optional `retreat` (`distance`, `time`): a hop straight back after every slash. A stun ends a wind-up or lunge without a slash |
 
 ## Unit classes (`units.json`)
 
@@ -83,10 +83,13 @@ Common fields: `dmg` (per hit, before `unitVsUnit` or `aceDamageTaken`), `range`
 | `enemyWeapon` | Replaces `weapon` for units of this class in the enemy army |
 | `armor` | Id in `damage.json` |
 | `shape` | Look; must have a painter |
+| `enemyShape` | Replaces `shape` for units of this class in the enemy army (the Commander's `pentagon`); must have a painter |
 | `rank` | Priority for the Strongest aim mode |
 | `kiteDistance` | Backs away from targets closer than this |
 | `huntsAce` | Always a hunter |
-| `nearAce` | Leash distance to the ace while stalking (semi-aces) |
+| `nearAce` | Leash distance to the ace while stalking (the Duelist) |
+| `holdLine` | `depth`, `band`: keeps its depth behind its own front line within `depth` ± `band` ([units.md](units.md#semi-aces-marksman-circus-duelist)) |
+| `aceFirst` | Targets the ace whenever it is within the weapon's range, otherwise the nearest hostile; its missiles switch to the ace when it comes within their `retargetRadius` |
 | `rally` | Pack rallied when stalking starts: `min`, `max`, `radius`, `follow` (leash to the leader) |
 | `aura` | `radius`, `fireRateMul` for nearby units of the same army |
 | `heal` | Heal pulse: `interval` (s), `radius`, `amount` (share of max HP, 0–1). Allied pulses also heal the ace |
@@ -103,7 +106,7 @@ Trooper (filler class) and Beam Trooper (`armies.json`: 0.2 of the allies, 0.18 
 
 ### Semi-aces
 
-Marksman, Circus and Duelist (`"semiAce": true`, `nearAce` 400, `rally` 10–20 within 600, `follow` 220, `shield` 1.5 s / 10 s). They appear only in `enemyMix` (0.005 each). Validation rejects a semi-ace in `allyMix`, `minimums` or `fillerClass`, since those apply to the allied army.
+Marksman, Circus and Duelist (`"semiAce": true`, `shield` 1.5 s / 10 s). The Duelist stalks the ace (`huntsAce`, `nearAce` 400, `rally` 10–20 within 600, `follow` 220); the Marksman and the Circus hold their front line (`holdLine`) and shoot the ace first when it is in range (`aceFirst`). They appear only in `enemyMix` (0.005 each). Validation rejects a semi-ace in `allyMix`, `minimums` or `fillerClass`, since those apply to the allied army.
 
 ## Armies (`armies.json`)
 
@@ -127,7 +130,7 @@ Counts are rounded shares, raised to the minimums; only the order is random.
 | `unitVsUnit` | 0.15 | Scales damage between AI units |
 | `aceDamageTaken` | 0.5 | Scales damage to the ace |
 | `aceAggro` | 0.35 | Chance an enemy unit without `huntsAce` is a hunter |
-| `aceHuntRange` | 800 | Hunters target the ace inside this range; enemy semi-aces start stalking |
+| `aceHuntRange` | 800 | Hunters target the ace inside this range; a Duelist starts stalking |
 
 The Railgun's range (760) is below `aceHuntRange`. `tests/balance.test.ts` checks the weapon balance band on every `npm test` ([architecture.md](architecture.md#balance-test)).
 
@@ -159,7 +162,7 @@ Each rises linearly from nothing at `range` to full at point blank. Only shots a
 | Field | Default | Effect |
 | --- | --: | --- |
 | `thrustTime` | 0.8 | Seconds of full thrust from standstill to top speed |
-| `drag` | 0.6 | Slowdown with no input (1/s). 0.6 halves speed about every 1.2 s; 0 = no slowdown. Also removes excess speed when Overboost ends |
+| `drag` | 0.6 | Slowdown with no input (1/s). 0.6 halves speed about every 1.2 s; 0 = no slowdown. Also removes speed above the top speed |
 | `lateralDrag` | 0.4 | Decay of sideways velocity while thrusting (1/s) |
 | `dashCarry` | 1 | Fraction of top speed kept in the dash direction when a dash ends |
 
@@ -169,32 +172,40 @@ Each rises linearly from nothing at `range` to full at point blank. Only shots a
 "movement": { "model": "direct", "response": 12 }
 ```
 
-Top speed is the frame's `speed` (× Overboost's `speedMul`); acceleration scales with it.
+Top speed is the frame's `speed` (× running statuses' `speed`); acceleration scales with it.
 
-## Super release (`battle.json` → `player.superRelease`)
+## Full Arms (`battle.json` → `player.superRelease`)
 
 | Field | Value | Effect |
 | --- | --: | --- |
-| `openingBurst` | 2.5 | Seconds' worth of each weapon's fire launched at once when triggered |
-| `duration` | 3 | Seconds during which every weapon hardpoint fires and every tool runs its release effect |
+| `openingBurst` | 7.5 | Seconds' worth of each weapon's fire launched at once when triggered |
+| `duration` | 3 | Seconds during which every weapon hardpoint fires |
 | `openingIframes` | 0.6 | Invulnerability when it starts |
 | `damageTakenMul` | 0.5 | Damage the ace takes during it |
+| `charge.start` | 0.5 | Gauge at sortie start |
 | `charge.perKill` | 0.012 | Gauge per enemy the ace destroys |
 | `charge.closeRadius`, `charge.closeKillMul` | 320, 2.5 | Kills within this distance count this many times |
 | `charge.perSecond` | 0.016 | Gauge per second |
 
-The gauge is 0–1, full at sortie start, and charges only while no release runs. Each weapon behavior's `burst` defines its spray. `weapons.json` → `burstArc` (degrees, default 360) limits the spray to a front arc (60 for the Beam Rifle and Railgun). Super release is a `Status` with `allWeapons` plus `Player.release`, run by `ReleaseSystem`; each tool effect's `release` hooks define its release effect.
+The gauge is 0–1 and charges only while Full Arms is not running. Each weapon behavior's `burst` defines its spray. `weapons.json` → `burstArc` (degrees, default 360) limits the spray to a front arc (60 for the Railgun and Sniper Rifle). Full Arms is a `Status` with `allWeapons` plus `Player.release`, run by `ReleaseSystem`.
 
 ## Close dodge (`battle.json` → `player.dodge`)
 
 | Field | Value | Effect |
 | --- | --: | --- |
 | `dashRefund` | 1 | Share of the frame's dash recharge given back |
-| `releaseCharge` | 0.15 | Super release gauge gained |
+| `releaseCharge` | 0.15 | Full Arms gauge gained |
+
+## Launch (`battle.json` → `player.launch`)
+
+| Field | Value | Effect |
+| --- | --: | --- |
+| `speed` | 1.4 | The ace's speed at the LAUNCH beat, as a multiple of its top speed (heading east) |
+| `zoom` | 1.6 | Camera zoom during the launch sequence, as a multiple of the chosen zoom (capped at the camera's maximum) |
 
 ## Impact (`battle.json` → `impact`)
 
-`freezeGap`, `shakeTime`, `flashTime` and `hurtTime` apply to all impacts. Each of `aceHit`, `bigKill`, `heavyHit`, `release`, `dodge`, `slash`, `aceDeath`, `blast` and `beam` has `freeze` (hit-stop seconds), `shake` (CSS pixels), `flash` (0–1), optional `danger` (red flash) and optional `hurt` (red screen edges, 0–1). `aceHit.fullShare` is the share of max HP at which a hit's reaction is full, `aceHit.react` the ace's jolt time; `heavyHit.minShare` is the share of max HP that makes a hit heavy; `aceDeath.slow` and `aceDeath.slowScale` set the slow motion; `blast.minRadius` and `blast.range` select the blasts that shake, `beam.minWidth` and `beam.range` the beams. `stagger.minDamage` and `stagger.time` set the unit judder.
+`freezeGap`, `shakeTime`, `flashTime` and `hurtTime` apply to all impacts. Each of `aceHit`, `bigKill`, `heavyHit`, `release`, `dodge`, `slash`, `railFull`, `shotgun`, `launch`, `aceDeath`, `blast` and `beam` has `freeze` (hit-stop seconds), `shake` (CSS pixels), `flash` (0–1), optional `danger` (red flash) and optional `hurt` (red screen edges, 0–1). `aceHit.fullShare` is the share of max HP at which a hit's reaction is full, `aceHit.react` the ace's jolt time; `heavyHit.minShare` is the share of max HP that makes a hit heavy; `aceDeath.slow` and `aceDeath.slowScale` set the slow motion; `blast.minRadius` and `blast.range` select the blasts that shake, `beam.minWidth` and `beam.range` the beams. `stagger.minDamage` and `stagger.time` set the unit judder.
 
 ## Rating (`battle.json` → `rating`)
 
@@ -214,7 +225,7 @@ The gauge is 0–1, full at sortie start, and charges only while no release runs
 
 ## Praise (`battle.json` → `praise`)
 
-`killMilestone` (a banner every N ace kills), `streak` (`kills` within `window` seconds, then quiet for `cooldown`), `releaseMinKills` (a release that downs this many gets a banner).
+`killMilestone` (a banner every N ace kills), `streak` (`kills` within `window` seconds, then quiet for `cooldown`), `releaseMinKills` (Full Arms downing this many gets a banner).
 
 ## Related
 

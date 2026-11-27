@@ -18,10 +18,15 @@ describe('game data', () => {
     expect(findMissingPainters(catalog)).toEqual([]);
   });
 
-  it('has the roster: 3 frames, 8 weapons, 4 tools, 6 aim modes, 14 unit classes with 14 unit weapons, 3 damage types', () => {
-    expect(catalog.frames).toHaveLength(3);
-    expect(catalog.weapons).toHaveLength(8);
-    expect(catalog.tools).toHaveLength(4);
+  it('has frame presets that spend exactly the frame points', () => {
+    for (const p of catalog.frameBuild.presets) {
+      expect(Object.values(p.build).reduce((a, b) => a + b, 0), p.name).toBe(catalog.frameBuild.points);
+    }
+  });
+
+  it('has the roster: a frame build with 3 presets, 6 weapons, 6 aim modes, 14 unit classes with 14 unit weapons, 3 damage types', () => {
+    expect(catalog.frameBuild.presets).toHaveLength(3);
+    expect(catalog.weapons).toHaveLength(6);
     expect(catalog.aimModes).toHaveLength(6);
     expect(catalog.classes).toHaveLength(14);
     expect(catalog.unitWeapons).toHaveLength(14);
@@ -50,11 +55,11 @@ describe('game data', () => {
   it('rejects broken data with every problem listed', () => {
     const broken = structuredClone(readRawData()) as unknown as GameData;
     broken.armies.enemyMix.striker = 0.9;
-    broken.loadout.defaultLoadout.slots = ['repair', 'repair', 'emp', 'decoy'];
+    broken.loadout.defaultLoadout.slots = ['rail', 'rail', 'sniper', 'repair'];
     broken.aimModes.modes[1]!.key = '5';
     const errors = validateGameData(broken);
     expect(errors.some((e) => e.includes('enemyMix'))).toBe(true);
-    expect(errors.some((e) => e.includes('at least one weapon'))).toBe(true);
+    expect(errors.some((e) => e.includes('unknown weapon "repair"'))).toBe(true);
     expect(errors.some((e) => e.includes('equipped twice'))).toBe(true);
     expect(errors.some((e) => e.includes('key "5"'))).toBe(true);
     expect(() => buildCatalog(broken as never)).toThrow(/Invalid game data/);
@@ -66,7 +71,7 @@ describe('game data', () => {
     broken.units.classes[0]!.armor = 'mithril';
     delete broken.damage.armor[1]!.vs.blast;
     const errors = validateGameData(broken);
-    expect(errors).toContain('weapons.rifle.damageType: unknown damage type "sonic"');
+    expect(errors).toContain('weapons.bazooka.damageType: unknown damage type "sonic"');
     expect(errors).toContain('units.trooper.armor: unknown armor "mithril"');
     expect(errors).toContain('damage.armor.plate.vs.blast must be a number >= 0');
   });
@@ -97,7 +102,7 @@ describe('game data', () => {
     const raw = structuredClone(readRawData()) as unknown as GameData;
     (raw.weapons.weapons[0] as { behavior: string }).behavior = 'plasmaWhip';
     expect(findMissingSimImplementations(buildCatalog(raw as never))).toEqual([
-      'weapon "rifle": no behavior "plasmaWhip"',
+      'weapon "bazooka": no behavior "plasmaWhip"',
     ]);
   });
 });

@@ -22,7 +22,8 @@ export function bindWheelZoom(canvas: HTMLCanvasElement, sink: CommandSink): voi
   canvas.addEventListener(
     'wheel',
     (e) => {
-      if (sink.inputMode() === 'menu') return;
+      const mode = sink.inputMode();
+      if (mode === 'menu' || mode === 'options') return;
       e.preventDefault();
       sink.zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1);
     },

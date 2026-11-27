@@ -1,4 +1,4 @@
-import type { ScreenFrame, ScreenLayer } from '../layers';
+import { PREVIEW_FLASH, type ScreenFrame, type ScreenLayer } from '../layers';
 import { withAlpha } from '../palette';
 
 /** Peak opacity of a full-strength flash. */
@@ -13,20 +13,23 @@ const HURT_ALPHA = 0.55;
  * screen edges redden and fade back.
  */
 export class ImpactFlashLayer implements ScreenLayer {
-  draw({ ctx, world, palette, view, width, height, motion }: ScreenFrame): void {
+  draw({ ctx, world, palette, view, width, height, flash: strength, previewFlash }: ScreenFrame): void {
     const s = world.impact;
-    if (s.hurt > 0) {
+    if (s.hurt > 0 && strength > 0) {
       const r = Math.hypot(width, height) / 2;
       const g = ctx.createRadialGradient(width / 2, height / 2, r * 0.45, width / 2, height / 2, r);
       g.addColorStop(0, withAlpha(palette.danger, 0));
-      g.addColorStop(1, withAlpha(palette.danger, HURT_ALPHA * s.hurt * Math.max(0.5, motion)));
+      g.addColorStop(1, withAlpha(palette.danger, HURT_ALPHA * s.hurt * strength));
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, width, height);
     }
-    if (s.flash <= 0 || s.flashPeak <= 0) return;
-    const light = s.flash / s.flashPeak > 0.5;
-    ctx.globalAlpha = s.flash * MAX_ALPHA * motion * Math.min(1, 1 / view.zoom);
-    ctx.fillStyle = light ? (s.flashDanger ? palette.danger : palette.ace) : palette.field;
+    const preview = previewFlash > s.flash;
+    const level = preview ? previewFlash : s.flash;
+    const peak = preview ? PREVIEW_FLASH : s.flashPeak;
+    if (level <= 0 || peak <= 0 || strength <= 0) return;
+    const light = level / peak > 0.5;
+    ctx.globalAlpha = level * MAX_ALPHA * strength * Math.min(1, 1 / view.zoom);
+    ctx.fillStyle = light ? (!preview && s.flashDanger ? palette.danger : palette.ace) : palette.field;
     ctx.fillRect(0, 0, width, height);
     ctx.globalAlpha = 1;
   }

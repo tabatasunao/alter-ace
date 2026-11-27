@@ -1,6 +1,7 @@
 import { ENEMY, isSemiAce, type Soldier } from '../entities';
 import { activePlayer, type System } from '../System';
 import type { World } from '../World';
+import { msg } from '../messages';
 
 /**
  * Enemy semi-aces (hunters leashed to the ace, `nearAce`) find the ace when it comes within the
@@ -49,7 +50,8 @@ export class StalkSystem implements System {
       u.stalking = true;
       u.retarget = 0;
     }
-    const who = `Enemy ${leader.def.name}`;
-    world.banner(pack.length ? `${who} and ${pack.length} ALTERs are hunting you` : `${who} is hunting you`, 'warn');
+    // Unit class names stay in English in every language.
+    const who = msg('banner.enemyUnit', { name: leader.def.name });
+    world.banner(pack.length ? msg('banner.huntPack', { who, n: pack.length }) : msg('banner.hunt', { who }), 'warn');
   }
 }

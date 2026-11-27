@@ -12,19 +12,21 @@ import type { World } from './World';
 export class Combat {
   constructor(private readonly world: World) {}
 
-  damage(u: Unit, amount: number, hit: Hit): void {
+  /** Applies a hit through the unit's damage rules. Returns the damage dealt after them (0 when blocked). */
+  damage(u: Unit, amount: number, hit: Hit): number {
     if (!canBeHit(u)) {
       noteBlockedHit(this.world, u);
-      return;
+      return 0;
     }
     for (const rule of DAMAGE_RULES[u.kind] as readonly DamageRule[]) {
       const next = rule(u, amount, hit, this.world);
-      if (next === null) return;
+      if (next === null) return 0;
       amount = next;
     }
     u.hp -= amount;
     u.flash = 0.08;
     if (u.hp <= 0) this.kill(u, hit);
+    return amount;
   }
 
   kill(u: Unit, hit: Hit): void {

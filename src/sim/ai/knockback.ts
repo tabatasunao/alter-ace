@@ -1,6 +1,6 @@
-import { clamp } from '../../core/math';
 import type { Soldier, UnitAction } from '../entities';
 import type { World } from '../World';
+import { moveUnit } from './unitMotion';
 
 /**
  * Throws a unit along (vx, vy), slowing to a stop over `time` s. It replaces whatever the unit was
@@ -24,16 +24,11 @@ class Knockback implements UnitAction {
   ) {}
 
   step(dt: number): boolean {
-    const { world, u } = this;
     const k = Math.max(0, 1 - this.t / this.time);
-    const margin = world.catalog.battle.ai.edgeMargin;
-    u.vx = this.vx * k;
-    u.vy = this.vy * k;
-    u.x = clamp(u.x + u.vx * dt, margin, world.width - margin);
-    u.y = clamp(u.y + u.vy * dt, margin, world.height - margin);
+    moveUnit(this.world, this.u, this.vx * k, this.vy * k, dt);
     this.t += dt;
     if (this.t < this.time) return false;
-    u.vx = u.vy = 0;
+    this.u.vx = this.u.vy = 0;
     return true;
   }
 }

@@ -1,0 +1,59 @@
+{
+  "weapons": [
+    {
+      "id": "rifle",
+      "name": "Assault Gun",
+      "behavior": "bullet",
+      "damageType": "kinetic",
+      "dmg": 28,
+      "range": 400,
+      "interval": 0.11,
+      "mag": 40,
+      "reload": 1.4,
+      "speed": 950,
+      "spread": 0.025,
+      "pierce": 2,
+      "desc": "Steady automatic fire. Each round pierces up to 2 ALTERs. The only weapon that keeps firing during a dash.",
+      "fireWhileDashing": true
+    },
+    {
+      "id": "beamRifle",
+      "name": "Beam Rifle",
+      "behavior": "beam",
+      "damageType": "beam",
+      "dmg": 70,
+      "range": 600,
+      "interval": 0.55,
+      "mag": 8,
+      "reload": 2.6,
+      "speed": 1700,
+      "pierce": 4,
+      "radius": 4.8,
+      "burstArc": 60,
+      "desc": "Fast beam that punches through up to five ALTERs. Fires faster the faster you move.",
+      "movingFireInterval": 0.6
+    },
+    {
+      "id": "mortar",
+      "name": "Mortar",
+      "behavior": "mortar",
+      "damageType": "blast",
+      "dmg": 0,
+      "splash": 180,
+      "splashDmg": 105,
+      "range": 720,
+      "interval": 1.8,
+      "mag": 2,
+      "reload": 4.2,
+      "flight": 0.9,
+      "leadFactor": 0.8,
+      "track": 220,
+      "stun": {
+        "radius": 80,
+        "time": 1,
+        "exposedMul": 1.5
+      },
+      "desc": "Lobbed shell that steers in flight to land on its target. Huge blast; the center stuns, and stunned enemies take 1.5x damage from your side."
+    }
+  ]
+}

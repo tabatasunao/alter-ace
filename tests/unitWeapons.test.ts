@@ -93,7 +93,7 @@ describe('unit weapons (AI armies)', () => {
       expect(1000 - onLine.hp).toBeCloseTo(w.dmg * unitVsUnit * 1.5);
       expect(1000 - behind.hp).toBeCloseTo(w.dmg * unitVsUnit * 1.5);
       expect(beside.hp).toBe(1000);
-      expect(world.fx).toContainEqual(expect.objectContaining({ type: 'rail', tone: 'enemy' }));
+      expect(world.fx).toContainEqual(expect.objectContaining({ type: 'line', tone: 'enemy' }));
     });
 
     it('tracks the target while charging, then locks the line', () => {

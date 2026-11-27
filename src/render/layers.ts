@@ -30,9 +30,14 @@ export interface ScreenFrame {
   /** Canvas size in CSS pixels. */
   readonly width: number;
   readonly height: number;
-  /** 1 normally; lower when the viewer asked for reduced motion (scales shake and flashes). */
-  readonly motion: number;
+  /** Flash strength multiplier: the player's setting, lowered when the viewer asked for reduced motion. */
+  readonly flash: number;
+  /** An extra flash (0–1) on top of the world's, while the options preview one. */
+  readonly previewFlash: number;
 }
+
+/** Strength of the options' preview flash when it starts; it fades from there. */
+export const PREVIEW_FLASH = 0.6;
 
 /** Draws in screen coordinates (CSS pixels), over the world. */
 export interface ScreenLayer {

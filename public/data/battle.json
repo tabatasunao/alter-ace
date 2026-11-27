@@ -41,12 +41,13 @@
     "dashIframes": 0.28,
     "superRelease": {
       "duration": 3,
-      "openingBurst": 2.5,
+      "openingBurst": 7.5,
       "openingIframes": 0.6,
       "damageTakenMul": 0.5,
-      "charge": { "perKill": 0.012, "closeRadius": 320, "closeKillMul": 2.5, "perSecond": 0.016 }
+      "charge": { "start": 0.5, "perKill": 0.012, "closeRadius": 320, "closeKillMul": 2.5, "perSecond": 0.016 }
     },
-    "dodge": { "dashRefund": 1, "releaseCharge": 0.15 }
+    "dodge": { "dashRefund": 1, "releaseCharge": 0.15 },
+    "launch": { "speed": 1.4, "zoom": 1.6 }
   },
   "camera": {
     "minZoom": 0.3,
@@ -54,6 +55,7 @@
     "followRate": 7,
     "demoFollowRate": 0.5,
     "zoomRate": 8,
+    "swingHold": 0.3,
     "battleZoom": { "reference": 1500, "aspect": 1.7, "min": 0.5, "max": 1.05 },
     "demoZoom": { "reference": 2600, "min": 0.32, "max": 0.75 }
   },
@@ -69,6 +71,9 @@
     "release": { "freeze": 0.12, "shake": 14, "flash": 0.6 },
     "dodge": { "freeze": 0.05, "shake": 0, "flash": 0.3 },
     "slash": { "freeze": 0.05, "shake": 6, "flash": 0 },
+    "shotgun": { "freeze": 0, "shake": 4.5, "flash": 0 },
+    "launch": { "freeze": 0, "shake": 10, "flash": 0.45 },
+    "railFull": { "freeze": 0.04, "shake": 6, "flash": 0 },
     "clash": { "freeze": 0.09, "shake": 9, "flash": 0.35 },
     "aceDeath": { "freeze": 0.25, "shake": 18, "flash": 0.8, "danger": true, "hurt": 1, "slow": 1.2, "slowScale": 0.3 },
     "blast": { "freeze": 0, "shake": 3, "flash": 0, "minRadius": 100, "range": 600 },

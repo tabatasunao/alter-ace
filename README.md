@@ -2,7 +2,7 @@
 
 **A**daptive **L**imbframe for **T**actical **E**ngagement and **R**econnaissance.
 
-A top-down 2D real-time mass battle game for the browser. The player flies one ace ALTER with 100 allies against an enemy army of 300–600 that reinforces in waves. The ace aims and fires automatically; the player controls movement, the active hardpoint, the target priority, dash, tools and super release.
+A top-down 2D real-time mass battle game for the browser. The player flies one ace ALTER with 100 allies against an enemy army of 300–600 that reinforces in waves. The ace aims and fires automatically; the player controls movement, the active weapon, the target priority, dash and Full Arms.
 
 **Play:** https://tabatasunao.github.io/alter-ace/
 
@@ -11,13 +11,17 @@ A top-down 2D real-time mass battle game for the browser. The player flies one a
 | Key | Action |
 | --- | --- |
 | W A S D / arrow keys | Move (touch: drag anywhere on the field) |
-| 1–4 | Select a weapon, or fire a tool |
+| 1–4 | Select a weapon |
 | Q / E, 5–0 | Cycle or select the aim mode |
 | Shift | Dash (brief invulnerability) |
-| Space | Super release, when its gauge is full: a burst from every weapon, then every weapon fires and every tool runs its release effect for 3 s |
+| Space | Full Arms, when its gauge is full: a burst from every weapon, then every weapon fires for 3 s |
 | R | Reload |
 | + / − / mouse wheel | Zoom |
 | P / Esc | Pause |
+
+These are the defaults; Options (in the hangar and the pause card) rebinds them and sets screen shake, screen flash and HUD size. In the hangar, Enter launches; any key skips the launch sequence. On the result card, Space sorties again and Esc returns to the hangar.
+
+Languages: English, 日本語, 简体中文, 한국어, picked at the top right of the hangar.
 
 ## Documentation
 
@@ -55,4 +59,8 @@ The game is TypeScript and the 2D canvas, bundled by [Vite](https://vite.dev/) a
 
 Code and data: [MIT](LICENSE).
 
-Bundled fonts: [Chakra Petch](public/licenses/OFL-ChakraPetch.txt), [IBM Plex Sans](public/licenses/OFL-IBMPlexSans.txt) and [IBM Plex Mono](public/licenses/OFL-IBMPlexMono.txt), under the SIL Open Font License 1.1. The font files are in `src/fonts/`.
+Bundled fonts, under the SIL Open Font License 1.1:
+
+- [M PLUS 1 Code](public/licenses/OFL-MPLUS1Code.txt): Latin and Latin Extended (`src/fonts/`), and Japanese (from `@fontsource-variable/m-plus-1-code`).
+- [Noto Sans SC](public/licenses/OFL-NotoSansSC.txt): Simplified Chinese (from `@fontsource-variable/noto-sans-sc`).
+- [Nanum Gothic Coding](public/licenses/OFL-NanumGothicCoding.txt): Korean (from `@fontsource/nanum-gothic-coding`).

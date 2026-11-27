@@ -7,6 +7,7 @@ import { createDemoWorld } from '../src/sim/scenarios';
 import { ReinforcementSystem } from '../src/sim/systems/ReinforcementSystem';
 import { VictorySystem } from '../src/sim/systems/VictorySystem';
 import { arena, battle, loadTestCatalog, run, VIEWPORT } from './helpers';
+import { tm } from '../src/i18n';
 
 describe('battle simulation (headless)', () => {
   const catalog = loadTestCatalog();
@@ -48,7 +49,7 @@ describe('battle simulation (headless)', () => {
     const world = arena(catalog);
     world.stats.enemyQueue = Array.from({ length: 100 }, () => 'trooper');
     const banners: string[] = [];
-    world.events.on('banner', ({ text }) => banners.push(text));
+    world.events.on('banner', ({ msg }) => banners.push(tm(msg)));
     new ReinforcementSystem().update(world, 1 / 60);
     const battalion = catalog.armies.reinforcements.battalion;
     expect(world.stats.enemyField).toBe(battalion);

@@ -2,6 +2,7 @@ import type { Unit } from './entities';
 import { kick } from './impact';
 import { chargeRelease } from './release';
 import type { World } from './World';
+import { msg } from './messages';
 
 /**
  * A hostile attack touched a unit that cannot be hit. If that unit is the ace inside a dash's
@@ -15,6 +16,6 @@ export function noteBlockedHit(world: World, u: Unit): void {
   u.dashCd = Math.max(0, u.dashCd - cfg.dashRefund * u.frame.dashCd);
   chargeRelease(world, u, cfg.releaseCharge);
   world.stats.dodges++;
-  world.addFx({ type: 'callout', x: u.x, y: u.y - 26, t: 0, life: 0.7, text: 'DODGE', tone: 'accent', size: 14 });
+  world.addFx({ type: 'callout', x: u.x, y: u.y - 26, t: 0, life: 0.7, msg: msg('callout.dodge'), tone: 'accent', size: 14 });
   kick(world, world.catalog.battle.impact.dodge);
 }

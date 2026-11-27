@@ -1,5 +1,5 @@
-import { isWeapon, type ArmamentDef, type DecoyTool, type FrameDef, type UnitClassDef } from '../data/types';
-import { ALLY, ENEMY, type Decoy, type Player, type Slot, type Soldier, type Team } from './entities';
+import type { FrameDef, UnitClassDef, WeaponDef } from '../data/types';
+import { ALLY, ENEMY, type Player, type Soldier, type Team, type WeaponSlot } from './entities';
 import type { World } from './World';
 
 /** Creates units with fresh ids and the world's seeded randomness. */
@@ -30,6 +30,7 @@ export class UnitFactory {
       maxHp: def.hp,
       size: def.size,
       cd: r.next() * weapon.interval,
+      skillCd: 0,
       retarget: r.next() * 0.5,
       target: null,
       strafe: r.next() < 0.5 ? -1 : 1,
@@ -51,33 +52,8 @@ export class UnitFactory {
     };
   }
 
-  decoy(tool: DecoyTool, team: Team, x: number, y: number, hp = tool.hp, life = tool.life): Decoy {
-    return {
-      kind: 'decoy',
-      id: this.world.nextId(),
-      team,
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      hp,
-      maxHp: hp,
-      size: tool.size,
-      alive: true,
-      cell: 0,
-      flash: 0,
-      stunT: 0,
-      life,
-      pullRadius: tool.pullRadius,
-    };
-  }
-
-  player(frame: FrameDef, armaments: readonly ArmamentDef[], x: number, y: number): Player {
-    const slots: Slot[] = armaments.map((def) =>
-      isWeapon(def)
-        ? { kind: 'weapon', def, ammo: def.mag ?? Infinity, reloadT: 0, reloadTotal: 1, cd: 0, spin: 0, sinceShot: Infinity }
-        : { kind: 'tool', def, cd: 0, cdTotal: 1 },
-    );
+  player(frame: FrameDef, weapons: readonly WeaponDef[], x: number, y: number): Player {
+    const slots: WeaponSlot[] = weapons.map((def) => ({ def, ammo: def.mag ?? Infinity, reloadT: 0, reloadTotal: 1, cd: 0, sinceShot: Infinity }));
     return {
       kind: 'player',
       id: this.world.nextId(),
@@ -95,17 +71,18 @@ export class UnitFactory {
       stunT: 0,
       frame,
       slots,
-      active: Math.max(0, slots.findIndex((s) => s.kind === 'weapon')),
+      active: 0,
       facing: 0,
       iframes: 0,
       dashCd: 0,
       dodgeArmed: false,
       hurtT: 0,
       hurtK: 0,
-      releaseCharge: 1,
+      releaseCharge: this.world.catalog.battle.player.superRelease.charge.start,
       release: null,
       dash: null,
       lunge: null,
+      jolt: null,
       statuses: [],
       lastHit: -99,
       reticle: null,

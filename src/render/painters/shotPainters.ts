@@ -31,6 +31,11 @@ function streak(ctx: CanvasRenderingContext2D, p: { x: number; y: number; vx: nu
   ctx.lineTo(p.x, p.y);
 }
 
+/** A missile that has made its terminal correction (committed to its line): its trail brightens. */
+function terminal(p: ShotOfKind<'missile'>): boolean {
+  return p.homing?.terminalLeft !== undefined;
+}
+
 function disc(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
   ctx.moveTo(x + r, y);
   ctx.arc(x, y, r, 0, TAU);
@@ -57,7 +62,8 @@ export const SHOT_LOOKS: ShotLookRegistry = {
   missile: [
     {
       mode: 'stroke',
-      color: (p, palette) => (p.src === 'player' ? palette.aimLine : palette.dim(toneOf(p.team, p.src, p.semiAce))),
+      color: (p, palette) =>
+        p.src === 'player' ? palette.aimLine : terminal(p) ? palette.tone(toneOf(p.team, p.src, p.semiAce)) : palette.dim(toneOf(p.team, p.src, p.semiAce)),
       width: () => 2,
       trace: (ctx, p) => streak(ctx, p, MISSILE_TRAIL),
     },

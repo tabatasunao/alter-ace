@@ -19,9 +19,9 @@ AI units of both armies. Each class carries exactly one weapon, wears one armor 
 | Semi-ace | Circus | Star | Micro-missile swarm | Blast | Heavy plate | Enemy |
 | Semi-ace | Duelist | Blade | Beam saber | Beam | Beam coating | Enemy |
 | Support | Healer | Cross | Beam pistol | Beam | Standard | Both |
-| Leader | Commander | Nested squares | Beam repeater (enemy: Mega-beam) | Beam | Standard | Both. At least 2 per army |
+| Leader | Commander | Nested squares (enemy: pentagon with a magenta glow) | Beam repeater (enemy: Mega-beam) | Beam | Standard | Both. At least 2 per army |
 
-Allied units are blue, enemy units orange-red, enemy semi-aces magenta with a thin halo.
+Allied units are blue, enemy units orange-red, enemy semi-aces magenta with a thin halo. Enemy Commanders, and the enemy units their aura is boosting, glow magenta.
 
 ### Trooper and Beam Trooper
 
@@ -70,13 +70,15 @@ Enemy only. 520–600 HP, faster than the line units.
 
 | Semi-ace | Weapon | Armor |
 | --- | --- | --- |
-| Marksman | Long beam rifle, range 760, pierces 2. Backs away inside 380 | Standard |
-| Circus | Salvos of 16 micro-missiles launched backwards, weaving as they home. Backs away inside 330 | Heavy plate |
-| Duelist | Beam saber: closes, lunges, then slashes an arc. Clashes with the ace's Beam Saber ([weapons.md](weapons.md#beam-saber)) | Beam coating |
+| Marksman | Long beam rifle, range 798, pierces 2, ×4 damage to units. Holds 150–370 behind its front line. Backs away inside 380 | Standard |
+| Circus | Salvos of 16 micro-missiles launched backwards, weaving as they home, ×6 damage to units. A missile switches to the ace when the ace comes within 160 of it. When a missile first comes within 260 of its target it stops weaving and turns hard for 0.35 s toward where the target is heading, then flies straight on (its trail brightens). A target that keeps a steady course is hit; one that changes course or dashes is missed. Holds its front line (within 60). Backs away inside 200 | Heavy plate |
+| Duelist | Beam saber: closes, lunges, then slashes an arc, and hops back 120 after every slash. **Dash strike** at a target 136–420 away, once every 5 s: it stands for 0.55 s while an aim line tracks the target (locked for the last 0.3 s), then dashes to where the line points and slashes for 60. A dash strike at the ace takes a charge turn, like a lance. Clashes with the ace's Beam Saber ([weapons.md](weapons.md#beam-saber)) | Beam coating |
 
 Shared traits:
 
 - **Hits:** count as the ace's for `aceHitMul`, so they deal ×1.5 to normal ALTERs.
+- **Roles:** the Marksman and the Circus fight from their army's front line. They shoot the ace whenever it is within their weapon's range (`aceFirst`) and allied units otherwise. The Duelist hunts the ace ([Stalking and packs](#stalking-and-packs)).
+- **Front line** (`holdLine`), in whatever direction the fight faces: against its nearest hostile in sight, a unit's depth is its own distance to that hostile minus the nearest teammate's (other line holders excluded; with no teammate near, it counts as well ahead). Too far forward, it backs away from the hostile; too far back, it closes in; in between it fights as usual.
 - **Strongest aim mode:** ranked just below the Commander.
 - **Hunting:** always hunt the ace, and stalk it once found ([Stalking and packs](#stalking-and-packs)).
 - **Shield:**
@@ -98,18 +100,17 @@ Shared traits:
 2. **Lock (last 0.45 s):** the line freezes, bright and dashed.
 3. **Fire:** the beam hits every hostile unit within 28 of the line, for 100 damage before scaling (50 to the ace).
 
-A stun cancels the charge. **Aura:** units of its army within 230 fire 30% faster (shown as a faint ground ring). Always hunts the ace. Every army has at least two. An enemy Commander's death shows a banner.
+A stun cancels the charge. **Aura:** units of its army within 230 fire 30% faster (shown as a faint ground ring; in the enemy army, boosted units glow magenta). Always hunts the ace. Every army has at least two. An enemy Commander's death shows a banner.
 
 ## AI behavior
 
 Each AI unit runs this loop every step (`SoldierAISystem`):
 
 1. **Stunned:** stops and does nothing until the stun ends.
-2. **Busy:** a Duelist mid-lunge does not steer. A unit charging a lance (a Sentinel, or an enemy Commander's mega-beam) keeps moving but fires nothing else.
+2. **Busy:** a Duelist winding up a dash strike, lunging or hopping back does not steer. A unit charging a lance (a Sentinel, or an enemy Commander's mega-beam) keeps moving but fires nothing else.
 3. **Target selection**, every 0.45–0.8 s, or immediately when the target dies. First match wins:
-   1. **Decoy:** an enemy unit within a Decoy Beacon's 650 pull radius targets the decoy.
-   2. **The ace:** a hunter within 800 of the ace, or a stalking unit at any distance, targets the ace.
-   3. **Nearest hostile** within 900.
+   1. **The ace:** a hunter within 800 of the ace, or a stalking unit at any distance, targets the ace. A Marksman or Circus (`aceFirst`) targets it within its weapon's range instead, and otherwise skips to the next rule.
+   2. **Nearest hostile** within 900.
 4. **Movement:**
    - Target beyond about 82% of weapon range: approach.
    - Class has `kiteDistance` and the target is closer than it: back away.
@@ -118,7 +119,7 @@ Each AI unit runs this loop every step (`SoldierAISystem`):
    - **Close-quarters fire:** within 400 of the ace, a unit shooting at it leads it more (up to the full intercept), narrows its spread (to ×0.3) and fires more often (up to ×2), each rising linearly to full at point blank. Shots at other units are unaffected.
    - **Turns for charged attacks:** at most 2 units charge a lance or mega-beam at the ace at once, and each fires at least 0.6 s after the one before (the charge runs longer if needed). A unit without a turn holds fire and tries again 0.5 s later. Charges at other units need no turn.
 6. **No target:** march toward the center of the opposing army.
-7. **Leash:** a stalking semi-ace beyond 400 of the ace, or a pack member beyond 220 of its leader, heads back. It keeps firing at targets in range.
+7. **Leash:** a stalking Duelist beyond 400 of the ace, a pack member beyond 220 of its leader, or a Marksman or Circus out of its place relative to its front line, heads back. It keeps firing at targets in range.
 
 Also applied every step:
 
@@ -127,14 +128,14 @@ Also applied every step:
 
 ### Hunters
 
-- **Always:** Lancer, Sentinel, Hornet, the semi-aces and the Commander (`huntsAce`).
+- **Always:** Lancer, Sentinel, Hornet, the Duelist and the Commander (`huntsAce`).
 - **By chance:** every other enemy unit has a 35% chance (`aceAggro`), rolled at spawn.
 - **Allied units** never target the ace.
 
 ## Stalking and packs
 
-- **Finding the ace.** An enemy semi-ace fights with its army until the ace comes within 800 (`aceHuntRange`). From then on it **stalks** the ace: it targets the ace at any distance and stays within 400 of it (`nearAce`).
-- **Rallying.** When a semi-ace starts stalking, the nearest 10–20 free enemy units within 600 join its pack (`rally`). Other semi-aces and units already in a pack do not join.
+- **Finding the ace.** A Duelist fights with its army until the ace comes within 800 (`aceHuntRange`). From then on it **stalks** the ace: it targets the ace at any distance and stays within 400 of it (`nearAce`). The Marksman and the Circus never stalk.
+- **Rallying.** When a Duelist starts stalking, the nearest 10–20 free enemy units within 600 join its pack (`rally`). Semi-aces and units already in a pack do not join.
 - **Pack behavior.** Pack members target the ace at any distance and stay within 220 of their leader. Each carries a small pip in the leader's color.
 - **Banner.** For example: "Enemy Duelist and 14 ALTERs are hunting you".
 - **Leader's death.** The pack disbands and its members return to their army.

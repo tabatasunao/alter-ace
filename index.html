@@ -8,74 +8,77 @@
   </head>
   <body>
     <div id="app">
-      <canvas id="world" aria-label="Battlefield"></canvas>
+      <canvas id="world" data-i18n-aria="aria.battlefield"></canvas>
 
-      <section id="hangar" class="screen" aria-label="Hangar">
+      <section id="hangar" class="screen" data-i18n-aria="aria.hangar">
         <div class="wrap">
           <header class="brief">
-            <p class="eyebrow">Sortie briefing · Sectors A1 to F4</p>
+            <div class="langpick">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><ellipse cx="8" cy="8" rx="2.8" ry="6.5"/><path d="M1.5 8h13M2.6 4.6h10.8M2.6 11.4h10.8"/></svg>
+              <div class="seg lang" id="langPick" role="radiogroup" data-i18n-aria="options.language"></div>
+            </div>
+            <p class="eyebrow" data-i18n="hangar.eyebrow">Sortie briefing · Sectors A1 to F4</p>
             <h1>ALTER<span class="sq" aria-hidden="true"></span></h1>
             <p class="acro"><b>A</b>daptive <b>L</b>imbframe for <b>T</b>actical <b>E</b>ngagement and <b>R</b>econnaissance</p>
-            <p class="lede">You fly the ace unit. 100 friendly ALTERs hold the west line while an enemy army of 300 to 600 pushes in from the east, with reserves arriving in waves. Pick a frame, arm four hardpoints and choose how your pilot aims. Bring down the whole army.</p>
+            <p class="lede" data-i18n="hangar.lede">You fly the ace unit.</p>
           </header>
 
           <div class="cols">
             <div class="col">
-              <section class="block" aria-labelledby="h-frame">
-                <h2 id="h-frame">Frame</h2>
-                <div id="frames" class="frames"></div>
-              </section>
-
-              <section class="block" aria-labelledby="h-aim">
-                <h2 id="h-aim">Aim mode</h2>
-                <p class="hint">Your pilot fires on their own at the enemy this mode picks inside the active weapon's range. You can switch modes any time in battle.</p>
-                <div id="aims" class="aims"></div>
-              </section>
-
-              <section class="block" aria-labelledby="h-army">
-                <h2 id="h-army">Enemy army</h2>
-                <div class="army">
-                  <div class="army-row">
-                    <label for="enemyCount">Enemy ALTERs</label>
-                    <output id="enemyOut" for="enemyCount">450</output>
-                  </div>
-                  <input id="enemyCount" type="range" min="300" max="600" step="50" value="450">
-                  <div class="vs"><span><b class="p">1</b> ace</span><span><b class="a" id="vsAlly">100</b> friendly</span><span><b class="e" id="vsEnemy">450</b> hostile</span></div>
-                  <p class="hint" id="deployNote">Up to 240 deploy at the start. The rest arrive from the east in waves of up to 60.</p>
-                  <ul class="legend" id="legend"></ul>
-                </div>
-              </section>
-
-              <section class="block" aria-labelledby="h-controls">
-                <h2 id="h-controls">Controls</h2>
-                <dl class="controls">
-                  <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></dt><dd>Move. Arrow keys work too. On touch, drag anywhere on the field.</dd>
-                  <dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd>Switch to that weapon, or fire that tool. You can also tap the hardpoint.</dd>
-                  <dt><kbd>Q</kbd><kbd>E</kbd></dt><dd>Cycle aim mode. <kbd>5</kbd>–<kbd>0</kbd> picks one directly.</dd>
-                  <dt><kbd>Shift</kbd></dt><dd>Dash, with a moment of invulnerability.</dd>
-                  <dt><kbd>Space</kbd></dt><dd id="releaseHint">Super release: every weapon hardpoint fires at once.</dd>
-                  <dt><kbd>R</kbd></dt><dd>Reload the active weapon early.</dd>
-                  <dt><kbd>+</kbd><kbd>−</kbd></dt><dd>Zoom. The mouse wheel works too.</dd>
-                  <dt><kbd>P</kbd></dt><dd>Pause. Esc works too.</dd>
-                </dl>
-              </section>
-            </div>
-
-            <div class="col">
               <section class="block" aria-labelledby="h-hard">
-                <h2 id="h-hard">Hardpoints <span class="count" id="hpCount">4 / 4</span></h2>
-                <p class="hint">Pick four. Weapons fire automatically while selected. Tools fire once when you press their key, then recharge. Weapons you aren't using keep reloading in the background.</p>
+                <h2 id="h-hard" data-n="01"><span data-i18n="hangar.hardpoints">Hardpoints</span> <span class="count" id="hpCount">4 / 4</span></h2>
+                <p class="hint" data-i18n="hangar.hardpointsHint">Pick four.</p>
                 <div id="loadSlots" class="loadslots"></div>
                 <div id="arsenal" class="arsenal"></div>
               </section>
             </div>
+
+            <div class="col">
+              <section class="block" aria-labelledby="h-frame">
+                <h2 id="h-frame" data-n="02"><span data-i18n="hangar.frame">Frame</span> <span class="count" id="ptCount"></span></h2>
+                <label class="aname" for="aceName"><span data-i18n="hangar.name">Name</span><input id="aceName" type="text" autocomplete="off" spellcheck="false" placeholder="ALTER"></label>
+                <p class="hint" data-i18n="hangar.frameHint">Spend your points.</p>
+                <div id="build" class="build"></div>
+              </section>
+
+              <section class="block" aria-labelledby="h-aim">
+                <h2 id="h-aim" data-n="03" data-i18n="hangar.aim">Aim mode</h2>
+                <p class="hint" data-i18n="hangar.aimHint">Your pilot fires on their own.</p>
+                <div id="aims" class="aims"></div>
+              </section>
+
+              <section class="block" aria-labelledby="h-army">
+                <h2 id="h-army" data-n="04" data-i18n="hangar.army">Enemy army</h2>
+                <div class="army">
+                  <div class="army-row">
+                    <label for="enemyCount" data-i18n="hangar.enemyAlters">Enemy ALTERs</label>
+                    <output id="enemyOut" for="enemyCount">450</output>
+                  </div>
+                  <input id="enemyCount" type="range" min="300" max="600" step="50" value="450">
+                  <div class="vs"><span><b class="p">1</b> <span data-i18n="hangar.vs.ace">ace</span></span><span><b class="a" id="vsAlly">100</b> <span data-i18n="hangar.vs.friendly">friendly</span></span><span><b class="e" id="vsEnemy">450</b> <span data-i18n="hangar.vs.hostile">hostile</span></span></div>
+                  <p class="record" id="armyBest"></p>
+                  <p class="hint" id="deployNote"></p>
+                  <details class="guide">
+                    <summary><span data-i18n="hangar.guide">Enemy field guide</span> <span class="count" id="guideCount"></span></summary>
+                    <ul class="legend" id="legend"></ul>
+                  </details>
+                </div>
+              </section>
+            </div>
           </div>
+
+          <section class="block controls-block" aria-labelledby="h-controls">
+            <h2 id="h-controls" data-n="05" data-i18n="hangar.controls">Controls</h2>
+            <p class="keystrip" id="keyStrip"></p>
+            <p class="hint" id="releaseHint"></p>
+          </section>
         </div>
 
         <div class="launchbar">
           <div class="inner">
             <p class="summary" id="summary"></p>
-            <button type="button" class="btn-primary btn" id="btnLaunch">Launch sortie</button>
+            <button type="button" class="btn" id="btnOptions" data-i18n="common.options">Options</button>
+            <button type="button" class="btn-primary btn" id="btnLaunch"><span data-i18n="hangar.launch">Launch sortie</span> <kbd>Enter</kbd></button>
           </div>
         </div>
       </section>
@@ -83,22 +86,22 @@
       <div id="hud" hidden>
         <div class="hud-top">
           <div class="force enemy">
-            <div class="fl"><span class="dot"></span>Hostile</div>
+            <div class="fl"><span class="dot"></span><span data-i18n="hud.hostile">Hostile</span></div>
             <div class="fn"><b id="hEnemy">0</b><small id="hEnemyOf">/0</small></div>
             <div class="fbar"><i id="hEnemyBar"></i></div>
             <div class="fs" id="hReserve"></div>
           </div>
           <div class="force ally">
-            <div class="fl"><span class="dot"></span>Friendly</div>
+            <div class="fl"><span class="dot"></span><span data-i18n="hud.friendly">Friendly</span></div>
             <div class="fn"><b id="hAlly">100</b><small id="hAllyOf">/100</small></div>
             <div class="fbar"><i id="hAllyBar"></i></div>
-            <div class="fs" id="hAllySub">Holding the line</div>
+            <div class="fs" id="hAllySub"></div>
           </div>
-          <div class="clock"><b id="hTime">0:00</b><span id="hKills">0 kills</span></div>
+          <div class="clock"><b id="hTime">0:00</b><span class="kills"><span data-i18n="hud.kills">Kills</span> <i id="hKills">0</i></span></div>
           <div class="spacer"></div>
           <div class="mm-wrap">
-            <canvas id="minimap" aria-label="Minimap"></canvas>
-            <button type="button" class="hbtn" id="btnPause" tabindex="-1">Pause</button>
+            <canvas id="minimap" data-i18n-aria="aria.minimap"></canvas>
+            <button type="button" class="hbtn" id="btnPause" tabindex="-1" data-i18n="hud.pause">Pause</button>
           </div>
         </div>
 
@@ -110,59 +113,108 @@
             <div class="hp" id="pHpWrap"><i id="pHp"></i></div>
             <div class="prow">
               <span class="hpt" id="pHpText"></span>
-              <span class="chip" id="pDash">Dash</span>
-              <span class="chip" id="pRelease">Release</span>
-              <span class="statuses" id="pStatuses"></span>
+              <span class="chip" id="pDash"></span>
+              <span class="chip" id="pRelease"></span>
             </div>
           </div>
           <div class="slots" id="slots"></div>
           <div class="aim">
-            <div class="aim-head">Aim mode <kbd>Q</kbd><kbd>E</kbd></div>
+            <button type="button" class="aim-head" id="aimHead" tabindex="-1"></button>
             <div class="aim-grid" id="aimGrid"></div>
-            <button type="button" class="aim-cycle" id="aimCycle" tabindex="-1">Aim: Closest</button>
+            <button type="button" class="aim-cycle" id="aimCycle" tabindex="-1"></button>
             <div class="touch-btns">
-              <button type="button" class="touch-btn release" id="btnRelease" tabindex="-1">Release</button>
-              <button type="button" class="touch-btn" id="btnDash" tabindex="-1">Dash</button>
+              <button type="button" class="touch-btn release" id="btnRelease" tabindex="-1" data-i18n="hud.fullArms">Full Arms</button>
+              <button type="button" class="touch-btn" id="btnDash" tabindex="-1" data-i18n="hud.dash">Dash</button>
             </div>
           </div>
         </div>
       </div>
 
-      <section id="pause" class="overlay" hidden aria-label="Paused">
+      <section id="launch" class="launch" lang="en" hidden aria-live="polite">
+        <div class="lbar top"></div>
+        <div class="lbar bottom"></div>
+        <div class="lcore">
+          <div class="ltop">
+            <p class="lline" id="launchLink"></p>
+            <p class="lname" id="launchName"></p>
+          </div>
+          <div class="lbot">
+            <p class="lspec" id="launchSpec"></p>
+            <p class="lgear" id="launchGear"></p>
+            <p class="lgo" id="launchGo"></p>
+          </div>
+        </div>
+        <p class="lskip" id="launchSkip"></p>
+      </section>
+
+      <section id="pause" class="overlay" hidden data-i18n-aria="aria.paused">
         <div class="card">
           <div>
-            <p class="eyebrow">Sortie paused</p>
-            <h2>Holding position</h2>
+            <p class="eyebrow" data-i18n="pause.eyebrow">Sortie paused</p>
+            <h2 data-i18n="pause.title">Holding position</h2>
           </div>
-          <dl class="pause-keys">
-            <dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd>Weapon or tool</dd>
-            <dt><kbd>Q</kbd><kbd>E</kbd> <kbd>5</kbd>–<kbd>0</kbd></dt><dd>Aim mode</dd>
-            <dt><kbd>Shift</kbd></dt><dd>Dash</dd>
-            <dt><kbd>Space</kbd></dt><dd>Super release</dd>
-            <dt><kbd>R</kbd></dt><dd>Reload</dd>
-          </dl>
+          <dl class="pause-keys" id="pauseKeys"></dl>
           <div class="actions">
-            <button type="button" class="btn btn-primary" id="btnResume">Resume</button>
-            <button type="button" class="btn" id="btnAbandon">Abandon sortie</button>
+            <button type="button" class="btn btn-primary" id="btnResume" data-i18n="pause.resume">Resume</button>
+            <button type="button" class="btn" id="btnRestart" data-i18n="pause.restart">Restart sortie</button>
+            <button type="button" class="btn" id="btnPauseOptions" data-i18n="common.options">Options</button>
+            <button type="button" class="btn" id="btnAbandon" data-i18n="pause.abandon">Abandon sortie</button>
           </div>
         </div>
       </section>
 
-      <section id="result" class="overlay" hidden aria-label="Sortie result">
+      <section id="result" class="overlay" hidden data-i18n-aria="aria.result">
         <div class="card">
           <div>
-            <p class="eyebrow" id="rEyebrow">Mission complete</p>
-            <h2 id="rTitle">Enemy army destroyed</h2>
+            <p class="eyebrow" id="rEyebrow"></p>
+            <h2 id="rTitle"></h2>
           </div>
           <div class="rank" id="rRankWrap">
             <span class="letter" id="rRank">A</span>
             <p id="rRankText"></p>
           </div>
+          <p class="tip" id="rTip" hidden></p>
           <dl class="stats" id="rStats"></dl>
           <div class="wkills" id="rWeapons"></div>
           <div class="actions">
-            <button type="button" class="btn btn-primary" id="btnAgain">Sortie again</button>
-            <button type="button" class="btn" id="btnHangar">Back to hangar</button>
+            <button type="button" class="btn btn-primary" id="btnAgain" data-i18n="result.again">Sortie again</button>
+            <button type="button" class="btn" id="btnHangar" data-i18n="result.hangar">Back to hangar</button>
+          </div>
+          <p class="keyhint"><kbd>Space</kbd> <span data-i18n="result.again">Sortie again</span> <span class="sep">·</span> <kbd>Esc</kbd> <span data-i18n="result.hangar">Back to hangar</span></p>
+        </div>
+      </section>
+
+      <section id="options" class="overlay" hidden data-i18n-aria="common.options">
+        <div class="card options-card">
+          <div>
+            <p class="eyebrow" data-i18n="common.options">Options</p>
+            <h2 data-i18n="options.title">Settings</h2>
+          </div>
+          <div class="opt-group">
+            <h3 data-i18n="options.screen">Screen</h3>
+            <label class="opt-row" for="optShake">
+              <span class="ol"><b data-i18n="options.shake">Screen shake</b><small data-i18n="options.shakeHint">How much big hits and blasts move the view.</small></span>
+              <input id="optShake" type="range" min="0" max="100" step="10">
+              <output id="optShakeOut" for="optShake"></output>
+            </label>
+            <label class="opt-row" for="optFlash">
+              <span class="ol"><b data-i18n="options.flash">Screen flash</b><small data-i18n="options.flashHint">How bright big moments flash.</small></span>
+              <input id="optFlash" type="range" min="0" max="100" step="10">
+              <output id="optFlashOut" for="optFlash"></output>
+            </label>
+            <div class="opt-row">
+              <span class="ol"><b data-i18n="options.hud">HUD size</b><small data-i18n="options.hudHint">Bigger text and panels in battle.</small></span>
+              <div class="seg" id="optHud" role="radiogroup" data-i18n-aria="options.hud"></div>
+            </div>
+          </div>
+          <div class="opt-group">
+            <h3 data-i18n="options.keys">Keys</h3>
+            <p class="hint" data-i18n="options.keysHint">Click a key, then press the new one.</p>
+            <div class="keys" id="optKeys"></div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="btnOptionsDone" data-i18n="options.done">Done</button>
+            <button type="button" class="btn" id="btnOptionsReset" data-i18n="options.reset">Reset to defaults</button>
           </div>
         </div>
       </section>

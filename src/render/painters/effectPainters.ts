@@ -1,6 +1,7 @@
 import { TAU } from '../../core/math';
 import type { Effect, EffectType, HitResult } from '../../sim/entities';
 import { withAlpha, type Palette } from '../palette';
+import { t, tm } from '../../i18n';
 
 /**
  * Draws one visual effect. `k` is its age from 0 to 1. Globals like alpha are reset by EffectLayer.
@@ -12,7 +13,15 @@ export interface EffectPainter<E extends Effect = Effect> {
 
 /** Seconds the hit marker's burst or ring plays (its label, if any, lasts longer). */
 const MARKER_TIME = 0.3;
-const HIT_LABELS: Readonly<Record<HitResult, string>> = { critical: 'CRITICAL', resisted: 'RESIST', shielded: 'SHIELD', exposed: 'EXPOSED' };
+/** Translation keys of the hit labels. */
+const HIT_LABELS: Readonly<Record<HitResult, string>> = { critical: 'hit.critical', resisted: 'hit.resisted', shielded: 'hit.shielded', exposed: 'hit.exposed' };
+/** Every translated word drawn on the canvas (hit labels and callouts), for preloading their glyphs. */
+export const CANVAS_TEXT_KEYS: readonly string[] = [...Object.values(HIT_LABELS), 'callout.fullArmsReady', 'callout.dodge', 'callout.clash', 'callout.kills'];
+
+/** A Railgun slug crosses its whole line in this many seconds (the hit itself is instant). */
+const SLUG_TRAVEL = 0.06;
+/** A full-strength slug's coiled discharge: wavelength along the wake, and step between points. */
+const COIL = { wave: 46, step: 6 };
 
 /** The heavy beam's glow layers: width as a multiple of the core's body, and opacity. */
 const HEAVY_GLOW: readonly (readonly [number, number])[] = [
@@ -56,7 +65,7 @@ export const EFFECT_PAINTERS: EffectPainterRegistry = {
       ctx.fillRect(f.x - 2, f.y - 2, 4, 4);
     },
   },
-  rail: {
+  line: {
     paint(ctx, f, k, palette) {
       const inv = 1 - k;
       ctx.globalAlpha = inv;
@@ -66,6 +75,90 @@ export const EFFECT_PAINTERS: EffectPainterRegistry = {
       ctx.moveTo(f.x, f.y);
       ctx.lineTo(f.x2, f.y2);
       ctx.stroke();
+    },
+  },
+  // The Railgun slug: a white-hot dart races down the line in a few frames, leaving a wake (kinetic
+  // glow around a thin white core) that thins and fades. A short spark cone flashes at the muzzle.
+  // A full-strength shot adds two coils of discharge twisting along the wake and a shock ring.
+  slug: {
+    paint(ctx, f, k, palette) {
+      const dx = f.x2 - f.x;
+      const dy = f.y2 - f.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len;
+      const uy = dy / len;
+      const p = Math.min(1, f.t / SLUG_TRAVEL);
+      const hx = f.x + dx * p;
+      const hy = f.y + dy * p;
+      const fade = 1 - k;
+      const glow = palette.damageType('kinetic');
+      const hot = palette.ace;
+      const w = f.width;
+      const stroke = (x1: number, y1: number, x2: number, y2: number, width: number, style: string, alpha: number) => {
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = style;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      };
+      ctx.lineCap = 'round';
+
+      // The wake.
+      ctx.globalCompositeOperation = 'lighter';
+      stroke(f.x, f.y, hx, hy, w * (0.45 + 0.55 * fade), glow, 0.32 * fade);
+      ctx.globalCompositeOperation = 'source-over';
+      stroke(f.x, f.y, hx, hy, Math.max(1, w * 0.2 * fade), hot, fade);
+
+      if (f.full) {
+        // Two coils of discharge twisting along the wake, turning as they fade.
+        const amp = w * 0.85 * (0.4 + 0.6 * fade);
+        const reach = len * p;
+        ctx.lineWidth = Math.max(1, w * 0.12);
+        ctx.strokeStyle = hot;
+        ctx.globalAlpha = 0.85 * fade;
+        for (const phase of [0, Math.PI]) {
+          ctx.beginPath();
+          for (let d = 0; d <= reach; d += COIL.step) {
+            const o = amp * Math.sin((d / COIL.wave) * TAU + phase + f.t * 40);
+            const x = f.x + ux * d - uy * o;
+            const y = f.y + uy * d + ux * o;
+            if (d === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+        // A shock ring bursting off the muzzle.
+        ctx.globalAlpha = 0.8 * fade;
+        ctx.lineWidth = 1 + 3 * fade;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, 12 + 70 * Math.sqrt(k), 0, TAU);
+        ctx.stroke();
+      }
+
+      // The slug itself, while it flies.
+      if (p < 1) {
+        const L = (16 + w * 2.2) * (f.full ? 1.4 : 1);
+        ctx.globalCompositeOperation = 'lighter';
+        stroke(hx - ux * L, hy - uy * L, hx, hy, w * (f.full ? 1.2 : 0.9), glow, 0.8);
+        ctx.globalCompositeOperation = 'source-over';
+        stroke(hx - ux * L * 0.6, hy - uy * L * 0.6, hx, hy, Math.max(2, w * 0.45), hot, 1);
+      }
+
+      // Muzzle sparks: a short forward cone, gone in a tenth of a second.
+      const m = 1 - Math.min(1, f.t / 0.1);
+      if (m > 0) {
+        const ray = (12 + w * 2) * m * (f.full ? 1.5 : 1);
+        for (const spread of [-0.45, -0.2, 0.2, 0.45]) {
+          const c = Math.cos(spread);
+          const sn = Math.sin(spread);
+          const rx = ux * c - uy * sn;
+          const ry = uy * c + ux * sn;
+          stroke(f.x, f.y, f.x + rx * ray, f.y + ry * ray, Math.max(1, w * 0.15), hot, m);
+        }
+      }
+      ctx.lineCap = 'butt';
     },
   },
   // The mega-beam: it snaps open, holds, then thins out. Additive glow layers around a solid
@@ -251,9 +344,10 @@ export const EFFECT_PAINTERS: EffectPainterRegistry = {
       ctx.lineWidth = 4;
       ctx.strokeStyle = palette.field;
       const y = f.y - 14 * k;
-      ctx.strokeText(f.text, f.x, y);
+      const text = tm(f.msg);
+      ctx.strokeText(text, f.x, y);
       ctx.fillStyle = palette.tone(f.tone);
-      ctx.fillText(f.text, f.x, y);
+      ctx.fillText(text, f.x, y);
       ctx.textAlign = 'start';
     },
   },
@@ -285,7 +379,7 @@ export const EFFECT_PAINTERS: EffectPainterRegistry = {
         ctx.stroke();
       }
       if (f.label) {
-        const text = HIT_LABELS[f.result];
+        const text = t(HIT_LABELS[f.result]);
         const y = f.y - 16 - 18 * k;
         ctx.globalAlpha = k < 0.7 ? 1 : (1 - k) / 0.3;
         ctx.font = `700 ${critical ? 13 : 11}px ${palette.fontDisplay}`;

@@ -6,7 +6,6 @@ import { BattleClockSystem } from './systems/BattleClockSystem';
 import { DemoCameraSystem, FollowCameraSystem } from './systems/CameraSystems';
 import { CentroidSystem } from './systems/CentroidSystem';
 import { CleanupSystem } from './systems/CleanupSystem';
-import { DecoySystem } from './systems/DecoySystem';
 import { DemoDirectorSystem } from './systems/DemoDirectorSystem';
 import { EffectSystem } from './systems/EffectSystem';
 import { GridSystem } from './systems/GridSystem';
@@ -45,7 +44,6 @@ export function battlePipeline(input: MoveInput): Simulation {
     new StalkSystem(),
     new SoldierAISystem(),
     new UnitActionSystem(),
-    new DecoySystem(),
     new ProjectileSystem(),
     new EffectSystem(),
     new ImpactSystem(),
@@ -70,7 +68,6 @@ export function demoPipeline(): Simulation {
     new ShieldSystem(),
     new SoldierAISystem(),
     new UnitActionSystem(),
-    new DecoySystem(),
     new ProjectileSystem(),
     new EffectSystem(),
     new DemoDirectorSystem(),

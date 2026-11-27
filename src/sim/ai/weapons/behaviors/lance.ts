@@ -1,5 +1,5 @@
 import type { LanceUnitWeapon } from '../../../../data/types';
-import { claimAceCharge } from '../../aceCharges';
+import { aceChargeDelay } from '../../aceCharges';
 import { aimAhead } from '../../aim';
 import { lineStrike } from '../../../attacks';
 import { armyHit, unitTone, type SightLine, type Soldier, type Unit, type UnitAction } from '../../../entities';
@@ -13,13 +13,9 @@ import type { UnitWeaponBehavior } from '../UnitWeaponBehavior';
  */
 export const lance: UnitWeaponBehavior<LanceUnitWeapon> = {
   fire({ world, unit, weapon, target }) {
-    let extra = 0;
-    if (target.kind === 'player') {
-      const turn = claimAceCharge(world, unit, weapon.charge);
-      if (turn === null) return false;
-      extra = turn;
-    }
-    unit.action = new LanceCharge(world, unit, weapon, target, weapon.charge + extra);
+    const delay = aceChargeDelay(world, unit, target, weapon.charge);
+    if (delay === null) return false;
+    unit.action = new LanceCharge(world, unit, weapon, target, weapon.charge + delay);
     return true;
   },
 };

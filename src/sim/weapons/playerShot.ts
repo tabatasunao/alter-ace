@@ -1,4 +1,5 @@
 import { launchShot } from '../attacks';
+import type { Knock } from '../../data/types';
 import { aceHit, type FlyingShot, type Homing, type Player, type Unit } from '../entities';
 import type { World } from '../World';
 
@@ -20,6 +21,7 @@ export interface ShotOptions {
   splashDmg?: number;
   homing?: Homing;
   target?: Unit;
+  knock?: Knock;
 }
 
 interface ShotWeapon {
@@ -45,6 +47,7 @@ export function firePlayerShot(world: World, P: Player, w: ShotWeapon, angle: nu
     splashDmg: o.splashDmg || 0,
     homing: o.homing ?? null,
     target: o.target ?? null,
+    knock: o.knock ?? null,
   });
 }
 

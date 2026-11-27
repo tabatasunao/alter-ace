@@ -1,43 +1,16 @@
 {
-  "frames": [
-    {
-      "id": "swift",
-      "code": "ALTER-S",
-      "name": "Swift",
-      "type": "Speed type",
-      "speed": 300,
-      "hp": 190,
-      "reloadMul": 1,
-      "rateMul": 1,
-      "toolMul": 1,
-      "dashCd": 1.4,
-      "desc": "Fastest frame with the shortest dash recharge. Outrun fire and pick your fights."
-    },
-    {
-      "id": "quickdraw",
-      "code": "ALTER-Q",
-      "name": "Quickdraw",
-      "type": "Fast-loading type",
-      "speed": 190,
-      "hp": 240,
-      "reloadMul": 0.45,
-      "rateMul": 0.8,
-      "toolMul": 0.7,
-      "dashCd": 3.2,
-      "desc": "Reloads in under half the time, fires 25% faster and recharges tools sooner. Slow, so get into position early."
-    },
-    {
-      "id": "vanguard",
-      "code": "ALTER-V",
-      "name": "Vanguard",
-      "type": "Balance type",
-      "speed": 245,
-      "hp": 220,
-      "reloadMul": 0.72,
-      "rateMul": 0.9,
-      "toolMul": 0.85,
-      "dashCd": 2.2,
-      "desc": "Good speed, solid HP and quicker reloads. No weak spot, no standout."
-    }
+  "points": 25,
+  "maxPerStat": 10,
+  "stats": {
+    "speed": { "label": "Speed", "min": 180, "max": 310 },
+    "hp": { "label": "HP", "min": 170, "max": 270 },
+    "reload": { "label": "Reload", "min": 1, "max": 0.45 },
+    "fireRate": { "label": "Fire rate", "min": 1, "max": 0.8 },
+    "dash": { "label": "Dash", "min": 3.4, "max": 1.2 }
+  },
+  "presets": [
+    { "name": "Swift", "build": { "speed": 10, "hp": 4, "reload": 1, "fireRate": 1, "dash": 9 } },
+    { "name": "Quickdraw", "build": { "speed": 1, "hp": 5, "reload": 10, "fireRate": 9, "dash": 0 } },
+    { "name": "Vanguard", "build": { "speed": 5, "hp": 5, "reload": 5, "fireRate": 5, "dash": 5 } }
   ]
 }

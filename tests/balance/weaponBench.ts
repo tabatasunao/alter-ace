@@ -2,7 +2,7 @@ import type { Point } from '../../src/core/math';
 import { SeededRandom } from '../../src/core/random';
 import type { Catalog } from '../../src/data/catalog';
 import { buildCatalog } from '../../src/data/load';
-import type { GameData } from '../../src/data/types';
+import type { FrameBuild, GameData } from '../../src/data/types';
 import { ENEMY, type Player, type Soldier } from '../../src/sim/entities';
 import type { MoveInput } from '../../src/sim/input';
 import { battlePipeline } from '../../src/sim/pipelines';
@@ -31,7 +31,7 @@ export interface BenchOptions {
   /** Enemy class ids to deploy, or a count to draw from the enemy army mix. */
   enemies: readonly string[] | number;
   seed?: number;
-  frame?: string;
+  build?: FrameBuild;
   maxTime?: number;
 }
 
@@ -60,7 +60,7 @@ export function runBench(catalog: Catalog, o: BenchOptions): BenchResult {
   const world = createBattleWorld(
     catalog,
     new SeededRandom(seed),
-    { frame: o.frame ?? d.frame, slots: [o.weapon], aim: d.aim, enemies: 0 },
+    { name: d.name, build: o.build ?? d.build, slots: [o.weapon], aim: d.aim, enemies: 0 },
     VIEWPORT,
   );
   const P = world.player!;
@@ -76,7 +76,7 @@ export function runBench(catalog: Catalog, o: BenchOptions): BenchResult {
   world.grid.rebuild(world.units);
   const totalHp = enemies.reduce((sum, u) => sum + u.maxHp, 0);
 
-  const weapon = catalog.armament(o.weapon);
+  const weapon = catalog.weapon(o.weapon);
   const range = 'range' in weapon ? weapon.range : 300;
   const sim = battlePipeline(botPilot(world, P, weapon.id === 'saber' || range < 200 ? 0 : range * 0.8));
 

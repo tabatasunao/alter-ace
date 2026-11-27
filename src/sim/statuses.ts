@@ -1,11 +1,11 @@
 import type { Player, Status, StatusStat } from './entities';
 
 /**
- * The ace's timed statuses (from tools like Overboost and Repair Nanites). A status scales stats
- * and/or heals; systems ask `statMul` instead of knowing which tool is running.
+ * The ace's timed statuses (Full Arms). A status scales stats; systems ask `statMul` instead of
+ * knowing which status is running.
  */
 
-/** Adds a status, replacing a running one from the same tool (so using a tool again refreshes it). */
+/** Adds a status, replacing a running one with the same id. */
 export function addStatus(P: Player, status: Status): void {
   const i = P.statuses.findIndex((s) => s.id === status.id);
   if (i >= 0) P.statuses[i] = status;
@@ -22,7 +22,7 @@ export function statMul(P: Player, stat: StatusStat): number {
   return k;
 }
 
-/** How fast the ace is moving as a share of its top speed (Overboost included), 0–1. */
+/** How fast the ace is moving as a share of its top speed (statuses included), 0–1. */
 export function speedFraction(P: Player): number {
   const top = P.frame.speed * statMul(P, 'speed');
   return top > 0 ? Math.min(1, Math.hypot(P.vx, P.vy) / top) : 0;
@@ -33,11 +33,8 @@ export function firesAllWeapons(P: Player): boolean {
   return P.statuses.some((s) => s.allWeapons);
 }
 
-/** Runs the statuses down, applies their healing, and drops the expired ones. */
+/** Runs the statuses down and drops the expired ones. */
 export function tickStatuses(P: Player, dt: number): void {
-  for (const s of P.statuses) {
-    s.remaining -= dt;
-    if (s.heal) P.hp = Math.min(P.maxHp, P.hp + s.heal * dt);
-  }
+  for (const s of P.statuses) s.remaining -= dt;
   if (P.statuses.some((s) => s.remaining <= 0)) P.statuses = P.statuses.filter((s) => s.remaining > 0);
 }
