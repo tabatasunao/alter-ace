@@ -105,6 +105,8 @@ interface WeaponBase {
   fullArmsFireInterval?: number;
   /** Camera zoom while the ace lunges with this weapon, as a multiple (it holds for `camera.swingHold` after). Default 1. */
   swingZoom?: number;
+  /** The sound each shot plays (an id in src/audio/sounds.ts). None if left out. */
+  sound?: string;
 }
 
 export interface BulletWeapon extends WeaponBase {

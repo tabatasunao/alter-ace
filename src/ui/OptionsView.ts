@@ -16,7 +16,7 @@ export interface OptionsModel {
 }
 
 /**
- * The options card: screen shake and flash strength, HUD size, and key bindings. Every change is
+ * The options card: screen shake and flash strength, HUD size, sound and music volume, and key bindings. Every change is
  * handed to `onChange` at once (the app saves and applies it); shake and flash changes also ask
  * for a preview. While a key button is listening, the next key press binds it.
  */
@@ -27,6 +27,10 @@ export class OptionsView {
     shakeOut: byId('optShakeOut'),
     flash: byId<HTMLInputElement>('optFlash'),
     flashOut: byId('optFlashOut'),
+    sfx: byId<HTMLInputElement>('optSfx'),
+    sfxOut: byId('optSfxOut'),
+    music: byId<HTMLInputElement>('optMusic'),
+    musicOut: byId('optMusicOut'),
     hud: byId('optHud'),
     keys: byId('optKeys'),
     done: byId<HTMLButtonElement>('btnOptionsDone'),
@@ -39,6 +43,8 @@ export class OptionsView {
   ) {
     this.el.shake.addEventListener('input', () => this.change({ shake: Number(this.el.shake.value) / 100 }, true));
     this.el.flash.addEventListener('input', () => this.change({ flash: Number(this.el.flash.value) / 100 }, true));
+    this.el.sfx.addEventListener('input', () => this.change({ sfx: Number(this.el.sfx.value) / 100 }, false));
+    this.el.music.addEventListener('input', () => this.change({ music: Number(this.el.music.value) / 100 }, false));
     this.el.hud.addEventListener('click', (e) => {
       const b = (e.target as Element).closest<HTMLElement>('[data-scale]');
       if (b) this.change({ hudScale: Number(b.dataset.scale) }, false);
@@ -113,6 +119,10 @@ export class OptionsView {
     this.el.shakeOut.textContent = `${Math.round(s.shake * 100)}%`;
     this.el.flash.value = String(Math.round(s.flash * 100));
     this.el.flashOut.textContent = `${Math.round(s.flash * 100)}%`;
+    this.el.sfx.value = String(Math.round(s.sfx * 100));
+    this.el.sfxOut.textContent = `${Math.round(s.sfx * 100)}%`;
+    this.el.music.value = String(Math.round(s.music * 100));
+    this.el.musicOut.textContent = `${Math.round(s.music * 100)}%`;
     this.el.hud.innerHTML = HUD_SIZES.map(
       ({ scale, label }) => `<button type="button" role="radio" data-scale="${scale}" aria-checked="${s.hudScale === scale}">${t(label)}</button>`,
     ).join('');

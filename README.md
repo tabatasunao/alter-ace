@@ -19,7 +19,7 @@ A top-down 2D real-time mass battle game for the browser. The player flies one a
 | + / − / mouse wheel | Zoom |
 | P / Esc | Pause |
 
-These are the defaults; Options (in the hangar and the pause card) rebinds them and sets screen shake, screen flash and HUD size. In the hangar, Enter launches; any key skips the launch sequence. On the result card, Space sorties again and Esc returns to the hangar.
+These are the defaults; Options (in the hangar and the pause card) rebinds them and sets screen shake, screen flash, HUD size, and effect and music volume. In the hangar, Enter launches; any key skips the launch sequence. On the result card, Space sorties again and Esc returns to the hangar.
 
 Languages: English, 日本語, 简体中文, 한국어, picked at the top right of the hangar.
 
@@ -58,6 +58,8 @@ The game is TypeScript and the 2D canvas, bundled by [Vite](https://vite.dev/) a
 ## License
 
 Code and data: [MIT](LICENSE).
+
+Sound effects and music: CC0 (public domain), from OpenGameArt; sources in [public/licenses/AUDIO.md](public/licenses/AUDIO.md).
 
 Bundled fonts, under the SIL Open Font License 1.1:
 

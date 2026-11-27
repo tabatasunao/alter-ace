@@ -26,6 +26,7 @@ Instructions for AI coding agents and human contributors.
 
 ```
 public/data/          all gameplay numbers (JSON)
+public/audio/         sound effects and music (CC0; sources in public/licenses/AUDIO.md)
 src/
   main.ts             boot: load and validate data, start App, dev hooks
   app/                App (composition root, screen flow), GameLoop
@@ -46,6 +47,7 @@ src/
     SpatialGrid.ts    spatial queries
   i18n/               languages: locales/*.json string tables, t()/tm(), data-file text (data.ts), page text (static.ts)
   render/             canvas renderer: layers/ (order) and painters/ (drawing)
+  audio/              sound effects and music (sounds.ts lists them; files in public/audio)
   ui/                 DOM views: hangar, HUD, result, pause, options, banner, launch sequence
   input/              keyboard and key map, touch joystick, wheel
   game/               loadout model and storage, sortie rating, career (bests, medals), defeat tips, settings
@@ -114,7 +116,7 @@ Checks that run on every `npm test`:
 | `tests/docs.test.ts` | `docs/reference.md` does not match the data, a relative link or `#anchor` in the docs is broken, or a page in `docs/` is not linked from `docs/README.md` |
 | `tests/simulation.test.ts` | Whole battles: deployment, reinforcements, victory, seeded replay |
 
-Other test files: `load`, `heal`, `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `dodge`, `impact`, `praise`, `closeQuarters`, `aceCharges`, `mortarStun`, `weaponPersonality`, `unitWeapons`, `semiAces`, `aimModes`, `movement`, `loadout`, `settings`, `ui`, `i18n`.
+Other test files: `load`, `heal`, `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `dodge`, `impact`, `praise`, `closeQuarters`, `aceCharges`, `mortarStun`, `weaponPersonality`, `unitWeapons`, `semiAces`, `aimModes`, `movement`, `loadout`, `settings`, `ui`, `i18n`, `audio`.
 
 ## Debugging
 

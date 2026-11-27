@@ -78,7 +78,7 @@
           <div class="inner">
             <p class="summary" id="summary"></p>
             <button type="button" class="btn" id="btnOptions" data-i18n="common.options">Options</button>
-            <button type="button" class="btn-primary btn" id="btnLaunch"><span data-i18n="hangar.launch">Launch sortie</span> <kbd>Enter</kbd></button>
+            <button type="button" class="btn-primary btn" id="btnLaunch" data-sound="none"><span data-i18n="hangar.launch">Launch sortie</span> <kbd>Enter</kbd></button>
           </div>
         </div>
       </section>
@@ -206,6 +206,19 @@
               <span class="ol"><b data-i18n="options.hud">HUD size</b><small data-i18n="options.hudHint">Bigger text and panels in battle.</small></span>
               <div class="seg" id="optHud" role="radiogroup" data-i18n-aria="options.hud"></div>
             </div>
+          </div>
+          <div class="opt-group">
+            <h3 data-i18n="options.sound">Sound</h3>
+            <label class="opt-row" for="optSfx">
+              <span class="ol"><b data-i18n="options.sfx">Effects volume</b><small data-i18n="options.sfxHint">Weapons, explosions and the interface.</small></span>
+              <input id="optSfx" type="range" min="0" max="100" step="10">
+              <output id="optSfxOut" for="optSfx"></output>
+            </label>
+            <label class="opt-row" for="optMusic">
+              <span class="ol"><b data-i18n="options.music">Music volume</b><small data-i18n="options.musicHint">Hangar and battle music.</small></span>
+              <input id="optMusic" type="range" min="0" max="100" step="10">
+              <output id="optMusicOut" for="optMusic"></output>
+            </label>
           </div>
           <div class="opt-group">
             <h3 data-i18n="options.keys">Keys</h3>

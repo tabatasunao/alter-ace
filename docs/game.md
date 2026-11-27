@@ -14,7 +14,7 @@ ALTER is a top-down, real-time 2D mass battle game that runs in the browser. Eve
 | Player decisions | Movement, active hardpoint, aim mode, dash, Full Arms |
 | Win | No enemy units left on the field or in reserve |
 | Loss | The ace is destroyed |
-| Audio | None |
+| Audio | Sound effects and music, CC0 ([sources](../public/licenses/AUDIO.md)). Volumes in [Options](#options) |
 | Languages | English, Japanese, Simplified Chinese, Korean, picked at the top right of the hangar. Weapon, unit class and preset names, Full Arms, semi-ace and the launch sequence stay in English in every language |
 
 ## Sortie flow
@@ -107,6 +107,12 @@ Weapons do not fire during a Beam Saber lunge or a dash.
 
 The hangar puts the hardpoints and arsenal in the wide left column, and the frame build, aim mode and enemy army in the right column, with the controls below. Section headers are numbered in that order: Hardpoints, Frame, Aim mode, Enemy army, Controls.
 
+## Sound
+
+Audio starts with the first click or key press (browsers block it before one). The hangar plays its own music; the battle music fades in at launch and fades out when the sortie ends, with a short sting after a victory. Pausing lowers the music, and hiding the tab silences everything.
+
+The ace's weapons sound on every shot. Explosions, unit deaths, enemy beams and enemy fire sound by where they are: quieter and panned to the side away from the middle of the view, silent far beyond its edge. Allied fire is silent. A dash, Full Arms, hits on the ace, close dodges, saber clashes, banners and the launch sequence each have their own sound.
+
 ## Pause
 
 The pause card lists the main keys and has **Resume**, **Restart sortie** (a new sortie with the same loadout), **Options** and **Abandon sortie** (back to the hangar). Switching to another tab or window pauses the sortie.
@@ -119,6 +125,8 @@ Options open from the hangar and from the pause card. Every change applies at on
 | --- | --- | --- |
 | Screen shake | 0–100%, steps of 10 | Scales every screen shake. A change plays a sample shake |
 | Screen flash | 0–100%, steps of 10 | Scales screen flashes and the red screen edges when the ace is hit. A change plays a sample flash |
+| Effects volume | 0–100%, steps of 10 (default 80%) | Weapons, explosions, warnings and the interface. A change plays a sample sound |
+| Music volume | 0–100%, steps of 10 (default 60%) | Hangar and battle music |
 | HUD size | Normal, Large (115%), Larger (130%) | Scales the whole HUD. A bigger HUD switches to its narrower layouts at wider screens |
 | Keys | Up to two keys per action | Click a key, then press the new one. Esc cancels; Delete or Backspace clears it. A key does one thing: binding it takes it from its old action. Tab, F5, F11, F12 and the system keys cannot be bound |
 
@@ -193,6 +201,7 @@ A unit shows at most one label every 0.45 s.
 | Missiles leaving backwards or wide | A salvo that turns and homes in after launch. A Circus swarm weaves as it flies |
 | Circus missile trails turning bright | The missile has made its last turn toward where its target is heading and now flies straight. Change course or dash to slip it |
 | Bubble around a semi-ace | Its shield is up. The bubble flickers before it drops |
+| A short two-tone chime | A charged attack (lance, mega-beam or dash strike) just locked onto the ace |
 | Small **!** badge on the screen edge, with a pointer | A threat outside the view, in the pointer's direction: a unit charging a lance or winding up a dash strike at the ace (orange; red and blinking once locked) or a stalking Duelist (magenta) |
 
 ### Callouts

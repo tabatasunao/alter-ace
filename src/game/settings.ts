@@ -28,6 +28,10 @@ export interface Settings {
   shake: number;
   /** Screen flash strength, 0–1. */
   flash: number;
+  /** Sound effect volume, 0–1. */
+  sfx: number;
+  /** Music volume, 0–1. */
+  music: number;
   /** HUD size multiplier (one of HUD_SIZES). */
   hudScale: number;
   /** The interface language, or null to follow the browser. */
@@ -83,7 +87,7 @@ export function defaultKeys(slotCount: number): KeyBindings {
 }
 
 export function defaultSettings(slotCount: number): Settings {
-  return { shake: 1, flash: 1, hudScale: 1, locale: null, keys: defaultKeys(slotCount) };
+  return { shake: 1, flash: 1, sfx: 0.8, music: 0.6, hudScale: 1, locale: null, keys: defaultKeys(slotCount) };
 }
 
 const unit = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? clamp(v, 0, 1) : fallback);
@@ -98,6 +102,8 @@ export function sanitizeSettings(raw: unknown, slotCount: number): Settings {
   const r = raw as Partial<Record<keyof Settings, unknown>>;
   out.shake = unit(r.shake, out.shake);
   out.flash = unit(r.flash, out.flash);
+  out.sfx = unit(r.sfx, out.sfx);
+  out.music = unit(r.music, out.music);
   if (HUD_SIZES.some((h) => h.scale === r.hudScale)) out.hudScale = r.hudScale as number;
   if (LOCALES.some((l) => l.id === r.locale)) out.locale = r.locale as Locale;
   if (r.keys && typeof r.keys === 'object') {

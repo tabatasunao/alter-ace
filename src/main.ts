@@ -4,6 +4,7 @@ import { loadCatalog, onDataFileChanged } from './data/load';
 import { LocalStorageCareerStore } from './game/career';
 import { LocalStorageLoadoutStore } from './game/loadoutStore';
 import { LocalStorageSettingsStore } from './game/settings';
+import { findMissingSounds } from './audio/registryCheck';
 import { findMissingPainters } from './render/registryCheck';
 import { findMissingSimImplementations } from './sim/registryCheck';
 // CJK fonts, split into character slices the browser loads only when a page needs them.
@@ -20,7 +21,7 @@ const SETTINGS_KEY = 'alter-ace-settings';
 /** Loads and checks data, including that every behavior/effect/strategy/shape it names exists in code. */
 async function loadCheckedCatalog(): Promise<Catalog> {
   const catalog = await loadCatalog();
-  const missing = [...findMissingSimImplementations(catalog), ...findMissingPainters(catalog)];
+  const missing = [...findMissingSimImplementations(catalog), ...findMissingPainters(catalog), ...findMissingSounds(catalog)];
   if (missing.length) throw new Error(`Data refers to things the code doesn't implement:\n- ${missing.join('\n- ')}`);
   return catalog;
 }
