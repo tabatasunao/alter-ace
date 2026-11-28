@@ -176,7 +176,7 @@ Each mode scores every enemy in range; the lowest score wins. Distance breaks ti
 
 ### Full Arms
 
-The gauge (0–1) must be full. It starts at `charge.start` (50%) and empties on use. While Full Arms is not running it gains `charge.perKill` (1.2%) per enemy the ace destroys (× `closeKillMul` 2.5 within `closeRadius` 320 of the ace), `charge.perSecond` (1.6%) per second, and 15% per close dodge. Nothing charges it while Full Arms runs.
+The gauge (0–1) must be full. It starts at `charge.start` (50%) and empties on use. While Full Arms is not running it gains `charge.perKill` (1.2%) per enemy the ace destroys (× `closeKillMul` 2.5 within `closeRadius` 320 of the ace), `charge.perSecond` (1.6%) per second, 15% per close dodge, `charge.perHpTaken` (50%) per max HP of damage the ace takes, and a near-miss bonus. A near miss is enemy fire that passes within `charge.graze.radius` (36) of the ace's hull without touching it: `graze.perShot` (0.8%) per flying shot, counted once when the shot leaves that zone or runs out, and `graze.perLine` (6%) per lance or mega-beam. A shot that hits the ace, or touches it during a dash, gives no near-miss bonus. Nothing charges the gauge while Full Arms runs.
 
 Starting Full Arms:
 

@@ -1,6 +1,7 @@
 import { segmentDistance, wrapAngle } from '../core/math';
 import type { BeamLook, Knock, StunSpec } from '../data/types';
 import type { FlyingShot, Hit, Homing, Soldier, Team, Tone, Unit } from './entities';
+import { noteGraze } from './graze';
 import { kick } from './impact';
 import type { World } from './World';
 
@@ -121,9 +122,12 @@ export function lineStrike(world: World, a: Attacker, angle: number, s: LineSpec
   // A wide hostile beam shakes the screen when it passes near the ace.
   const beam = world.catalog.battle.impact.beam;
   const P = world.player;
-  if (P?.alive && P.team !== a.team && s.width >= beam.minWidth) {
+  if (P?.alive && P.team !== a.team) {
     const d = segmentDistance(P.x, P.y, a.x, a.y, x2, y2);
-    if (d < beam.range) kick(world, beam, 1 - d / beam.range);
+    if (s.width >= beam.minWidth && d < beam.range) kick(world, beam, 1 - d / beam.range);
+    // A line that misses the ace by a little is a near miss.
+    const edge = d - s.width / 2 - P.size / 2;
+    if (edge > 0) noteGraze(world, P, edge, 'line');
   }
   return hits;
 }

@@ -77,6 +77,14 @@ kbd{font:600 11px/1 var(--font-data);padding:3px 5px;border:1px solid var(--line
   .langpick{grid-column:1/-1;margin-bottom:12px}
   .brief > .eyebrow{grid-row:2}
 }
+/* First visit: a short card in place of the loadout columns, so the first sortie is one press away. */
+.first-card{display:none;margin-top:28px;max-width:64ch;padding:18px 20px;border:1px solid var(--line-strong);border-left:3px solid var(--accent);border-radius:3px;background:var(--panel)}
+.first-card h2{margin:0 0 8px;font:700 13px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.first-card p{margin:0 0 14px;font-size:15px;line-height:1.55}
+.first-card .actions{display:flex;flex-wrap:wrap;gap:10px}
+#hangar.first .first-card{display:block}
+#hangar.first .cols,#hangar.first .controls-block{display:none}
+#hangar.first #btnLaunch kbd{display:none}
 .cols{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:32px;margin-top:36px}
 .controls-block{margin-top:32px}
 .col{display:flex;flex-direction:column;gap:32px;min-width:0}
@@ -254,6 +262,43 @@ kbd{font:600 11px/1 var(--font-data);padding:3px 5px;border:1px solid var(--line
 #banner.show{opacity:1;transform:translate(-50%,0)}
 #banner.warn{color:var(--enemy);border-color:var(--enemy)}
 #banner.good{color:var(--accent);border-color:var(--accent)}
+
+/* Tutorial key prompt: big caps just under the ace, lit while held or just pressed; the last key pressed under them. */
+.key-prompt{position:absolute;left:0;top:0;display:none;flex-direction:column;align-items:center;gap:6px;pointer-events:none;will-change:transform}
+.key-prompt.show{display:flex}
+.kp-keys{display:flex;gap:6px}
+.kp-keys.cross{display:grid;grid-template-columns:repeat(3,auto);gap:5px}
+.kp-keys.cross .kp-cap:first-child{grid-column:2}
+.kp-keys.cross .kp-cap:nth-child(2){grid-column:1}
+.kp-cap{min-width:42px;height:42px;padding:0 10px;display:grid;place-items:center;font:700 20px/1 var(--font-data);color:var(--accent);background:var(--hud-bg-strong);border:2px solid color-mix(in srgb,var(--accent) 60%,transparent);border-radius:6px;box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 40%,transparent);transition:transform .08s,background-color .08s,color .08s,box-shadow .08s}
+.kp-cap.on{background:var(--accent);color:var(--field);transform:translateY(3px);box-shadow:0 0 0 transparent}
+.kp-cap.charging{color:var(--muted);border-color:var(--line-strong);box-shadow:0 3px 0 var(--line);background:linear-gradient(to top,color-mix(in srgb,var(--accent) 28%,transparent) var(--charge),var(--hud-bg-strong) var(--charge))}
+.kp-pressed{display:flex;align-items:center;gap:6px;padding:3px 8px;background:var(--hud-bg);border-radius:3px;font:500 12px var(--font-display);color:var(--muted)}
+.kp-pressed kbd{font-size:13px}
+.kp-pressed.match{color:var(--accent)}
+
+/* The tutorial step's count over the ace (00/00): gold when the step's count is complete. */
+.stage-count{position:absolute;left:0;top:0;margin:0;display:none;padding:2px 8px;background:var(--hud-bg);border-radius:3px;font:700 18px/1.2 var(--font-data);letter-spacing:.04em;color:var(--text);pointer-events:none;will-change:transform}
+.stage-count.show{display:block}
+.stage-count.done{color:var(--accent)}
+
+/* The first-mission title: flashes in large across the middle, holds, then fades. */
+.mission-flash{position:absolute;left:0;right:0;top:38%;margin:0;text-align:center;font:700 clamp(28px,6vw,64px)/1.1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);text-shadow:0 0 24px color-mix(in srgb,var(--accent) 55%,transparent),0 2px 0 rgb(0 0 0 / .6);pointer-events:none;opacity:0}
+.mission-flash.show{animation:mission-flash 2.6s ease-out both}
+@keyframes mission-flash{0%{opacity:0;transform:scale(1.25);filter:brightness(2.5)}8%{opacity:1;transform:scale(1);filter:brightness(1.8)}14%{filter:brightness(1)}75%{opacity:1}100%{opacity:0;transform:scale(1.02)}}
+@media (prefers-reduced-motion:reduce){.mission-flash.show{animation-name:mission-flash-calm}@keyframes mission-flash-calm{0%,100%{opacity:0}10%,75%{opacity:1}}}
+
+/* Tutorial objective: one line above the hardpoints, gold check mark once the stage is cleared. */
+.objective{position:absolute;left:50%;bottom:calc(100% + 6px);margin:0;display:flex;align-items:center;gap:8px;width:max-content;max-width:min(600px,calc(100% - 32px));padding:8px 14px;background:var(--hud-bg-strong);border:1px solid var(--line-strong);border-left:3px solid var(--accent);border-radius:3px;font:500 14px/1.35 var(--font-display);color:var(--text);opacity:0;visibility:hidden;transform:translate(-50%,6px);transition:opacity .2s,transform .2s,visibility 0s .2s,border-color .2s}
+.objective.show{opacity:1;visibility:visible;transform:translate(-50%,0);transition:opacity .2s,transform .2s,border-color .2s}
+.objective kbd{margin:0 2px;color:var(--accent);border-color:color-mix(in srgb,var(--accent) 55%,var(--line-strong))}
+.objective .hk{flex:none;width:8px;height:8px;background:var(--accent)}
+.objective .hs{flex:none;font:600 12px var(--font-data);color:var(--accent)}
+.objective.done{border-color:var(--accent);color:var(--accent)}
+.objective.done .hk{width:auto;height:auto;background:none;font-weight:700}
+.objective.done .hk::before{content:"\2713"}
+/* The tutorial has no allied army. */
+#hud.tutorial .force.ally{display:none}
 
 .hud-bottom{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"pilot slots aim";align-items:end;gap:10px;padding-bottom:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .pilot{grid-area:pilot;justify-self:start;width:min(320px,100%);padding:9px 12px 10px;background:var(--hud-bg);border:1px solid var(--line);border-radius:3px}

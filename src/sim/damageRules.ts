@@ -1,5 +1,6 @@
 import type { Hit, HitResult, Player, Soldier, Unit } from './entities';
 import { kick } from './impact';
+import { chargeRelease } from './releaseCharge';
 import { statMul } from './statuses';
 import type { World } from './World';
 
@@ -14,10 +15,22 @@ export type DamageRule<U extends Unit = Unit> = (u: U, amount: number, hit: Hit,
 const aceScale: DamageRule<Player> = (u, amount, _hit, world) =>
   amount * (world.catalog.battle.balance.aceDamageTaken * statMul(u, 'damageTaken'));
 
+/** In the tutorial a hit never takes the ace below `hpFloor` of its max HP, so the mission cannot be lost. */
+const tutorialFloor: DamageRule<Player> = (u, amount, _hit, world) => {
+  if (!world.tutorial) return amount;
+  return Math.min(amount, Math.max(0, u.hp - u.maxHp * world.catalog.armies.tutorial.hpFloor));
+};
+
 /** Records a hit on the ace (stats, and it delays regeneration). Runs last. */
 const recordAceHit: DamageRule<Player> = (u, amount, _hit, world) => {
   world.stats.dmgTaken += amount;
   u.lastHit = world.t;
+  return amount;
+};
+
+/** Damage taken charges the Full Arms gauge, by the share of max HP lost. */
+const chargeOnHit: DamageRule<Player> = (u, amount, _hit, world) => {
+  chargeRelease(world, u, (amount / u.maxHp) * world.catalog.battle.player.superRelease.charge.perHpTaken);
   return amount;
 };
 
@@ -107,6 +120,6 @@ type RuleTable = { readonly [K in Unit['kind']]: readonly DamageRule<Extract<Uni
 
 /** The damage rules each kind of unit runs, in order. */
 export const DAMAGE_RULES: RuleTable = {
-  player: [aceScale, recordAceHit, aceHitReaction, heavyHitImpact],
+  player: [aceScale, tutorialFloor, recordAceHit, chargeOnHit, aceHitReaction, heavyHitImpact],
   soldier: [shield, armySoftening, aceVulnerability, armor, exposed, stagger],
 };

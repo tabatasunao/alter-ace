@@ -1,13 +1,14 @@
 import { randomSeed, SeededRandom } from '../core/random';
 import { VariableStep } from '../core/timestep';
 import type { Catalog } from '../data/catalog';
-import { recordSortie, sanitizeCareer, type Career, type CareerStore, type SortieRecord } from '../game/career';
+import { FIRST_SORTIE, learn, recordSortie, sanitizeCareer, TUTORIAL_DONE, type Career, type CareerStore, type SortieRecord } from '../game/career';
 import { LoadoutEditor, sanitizeLoadout } from '../game/loadout';
 import type { LoadoutStore } from '../game/loadoutStore';
 import { rateSortie } from '../game/rating';
-import { actionList, defaultSettings, sanitizeSettings, type Settings, type SettingsStore } from '../game/settings';
+import { actionList, defaultSettings, sanitizeSettings, slotAction, type ActionId, type Settings, type SettingsStore } from '../game/settings';
+import { textKeys } from '../data/textKeys';
 import type { CommandSink, InputMode } from '../input/commands';
-import { KeyMap } from '../input/keymap';
+import { keyLabel, KeyMap } from '../input/keymap';
 import { bindWheelZoom, combineMoveInputs } from '../input/combine';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { TouchJoystick } from '../input/TouchJoystick';
@@ -25,9 +26,10 @@ import { UnitLayer } from '../render/layers/UnitLayer';
 import { Minimap } from '../render/Minimap';
 import { readPalette } from '../render/palette';
 import type { MoveInput } from '../sim/input';
-import { battlePipeline, demoPipeline } from '../sim/pipelines';
+import { battlePipeline, demoPipeline, tutorialPipeline } from '../sim/pipelines';
 import { PlayerCommands } from '../sim/PlayerCommands';
-import { createBattleWorld, createDemoWorld } from '../sim/scenarios';
+import { createBattleWorld, createDemoWorld, createFollowUpWorld, createTutorialWorld } from '../sim/scenarios';
+import { currentStage, stageCount } from '../sim/tutorial';
 import type { Simulation } from '../sim/System';
 import type { World } from '../sim/World';
 import { BannerView } from '../ui/BannerView';
@@ -35,6 +37,9 @@ import { LaunchView } from '../ui/LaunchView';
 import { CANVAS_TEXT_KEYS } from '../render/painters/effectPainters';
 import { byId } from '../ui/dom';
 import { HangarView } from '../ui/HangarView';
+import { KeyPromptView, type KeyPrompt, type StageCount } from '../ui/KeyPromptView';
+import { MissionFlashView } from '../ui/MissionFlashView';
+import { ObjectiveView, type Objective } from '../ui/ObjectiveView';
 import { HudView } from '../ui/HudView';
 import { OptionsView } from '../ui/OptionsView';
 import { LanguagePicker } from '../ui/LanguagePicker';
@@ -47,6 +52,18 @@ import { holdForLaunch, launchAce } from '../sim/launch';
 import { AudioEngine } from '../audio/AudioEngine';
 import { BattleAudio } from '../audio/BattleAudio';
 import { GameLoop } from './GameLoop';
+
+/** What a launch starts: a sortie, the tutorial mission, or the battle that follows the tutorial (no launch sequence). */
+type SortieMode = 'battle' | 'tutorial' | 'afterTutorial';
+
+/** How long the first-mission title stays on screen (matches its CSS animation). */
+const MISSION_FLASH_SECONDS = 2.6;
+/** The tutorial key prompt: a cap stays lit this long after its key is pressed; the last key pressed shows this long; gap under the ace (px). */
+const KEY_LIT_MS = 220;
+const KEY_PRESSED_MS = 900;
+const KEY_PROMPT_GAP = 26;
+/** Gap between the top of the ace and the tutorial step's count (px). */
+const STAGE_COUNT_GAP = 22;
 
 /** After the result card appears, confirm is ignored this long, so mashing through a defeat doesn't relaunch at once. */
 const RESULT_GUARD_MS = 450;
@@ -83,6 +100,8 @@ export class App implements CommandSink {
   private optionsFrom: 'hangar' | 'pause' | null = null;
   /** The finished sortie's career record, for the result card. */
   private lastRecord: SortieRecord | null = null;
+  /** What the last launch started, so Restart repeats it. */
+  private lastMode: SortieMode = 'battle';
 
   private readonly store: LoadoutStore;
   private readonly careerStore: CareerStore;
@@ -95,6 +114,9 @@ export class App implements CommandSink {
   private readonly moveInput: MoveInput;
   private readonly hangar: HangarView;
   private readonly hud: HudView;
+  private readonly objectiveView: ObjectiveView;
+  private readonly keyPrompt: KeyPromptView;
+  private readonly missionFlash: MissionFlashView;
   private readonly result: ResultView;
   private readonly pause: PauseView;
   private readonly banner: BannerView;
@@ -142,12 +164,16 @@ export class App implements CommandSink {
       () => this.store.save(this.editor.value),
       () => this.launch(),
       () => this.openOptions('hangar'),
+      () => this.startSortie('tutorial'),
     );
     this.hud = new HudView(byId('hud'), this, () => this.keymap);
+    this.objectiveView = new ObjectiveView(byId('objective'));
+    this.keyPrompt = new KeyPromptView(byId('keyPrompt'), byId('stageCount'));
+    this.missionFlash = new MissionFlashView(byId('missionFlash'), MISSION_FLASH_SECONDS);
     this.result = new ResultView(byId('result'), { onAgain: () => this.launch(), onHangar: () => this.toHangar() }, () => this.keymap);
     this.pause = new PauseView(byId('pause'), {
       onResume: () => this.togglePause(false),
-      onRestart: () => this.launch(),
+      onRestart: () => this.startSortie(this.lastMode),
       onOptions: () => this.openOptions('pause'),
       onAbandon: () => this.toHangar(),
     });
@@ -262,7 +288,8 @@ export class App implements CommandSink {
     if (this.launchView.running) return this.launchView.skip();
     const w = this.world;
     if (!w || w.isDemo) {
-      this.launch();
+      if (this.hangar.firstVisit) this.startSortie('tutorial');
+      else this.launch();
     } else if (w.status.over && !this.resultShown) {
       clearTimeout(this.resultTimer);
       this.showResult(w);
@@ -274,7 +301,7 @@ export class App implements CommandSink {
   back(): void {
     const w = this.world;
     if (!w || !w.status.over) return;
-    if (this.resultShown) {
+    if (this.resultShown || w.mode === 'tutorial') {
       this.toHangar();
     } else {
       clearTimeout(this.resultTimer);
@@ -294,12 +321,22 @@ export class App implements CommandSink {
   // ---------- Screen flow ----------
 
   private launch(): void {
+    this.startSortie('battle');
+  }
+
+  /**
+   * Starts a sortie or the tutorial mission with the current loadout, through the launch sequence.
+   * The battle that follows the tutorial starts at once, without it.
+   */
+  private startSortie(mode: SortieMode): void {
     if (!this.editor.check().ok) {
       this.hangar.denyLaunch();
       this.audio.play('uiDeny');
       return;
     }
     this.audio.play('uiConfirm');
+    if (mode !== 'tutorial') this.learnControl(FIRST_SORTIE);
+    this.lastMode = mode;
     this.audio.playMusic('battle');
     this.audio.duckMusic(false);
     this.resultShown = false;
@@ -308,8 +345,14 @@ export class App implements CommandSink {
     this.hangar.hide();
     this.result.hide();
     this.pause.setVisible(false);
-    const world = this.startBattle();
+    const world = this.startBattle(mode);
+    this.objectiveView.render(null);
+    this.keyPrompt.render(null);
+    this.keyPrompt.renderCount(null);
+    this.missionFlash.hide();
+    byId('hud').classList.toggle('tutorial', mode === 'tutorial');
     this.hud.build(world);
+    if (mode === 'afterTutorial') return this.beginBattle(world);
     this.hud.hide();
     this.playLaunch(world);
   }
@@ -329,12 +372,17 @@ export class App implements CommandSink {
         this.audio.play('launchGo');
       },
       () => {
-        if (this.world !== world) return;
-        this.hud.show();
-        this.hud.update(world);
-        this.banner.show(t('banner.sortieStart'), 'good');
+        if (this.world === world) this.beginBattle(world);
       },
     );
+  }
+
+  /** The HUD comes up and, in a sortie, the start banner (after the tutorial: the first-mission title). */
+  private beginBattle(world: World): void {
+    this.hud.show();
+    this.hud.update(world);
+    if (this.lastMode === 'afterTutorial') this.missionFlash.show(t('mission.first'));
+    else if (world.mode === 'battle') this.banner.show(t('banner.sortieStart'), 'good');
   }
 
   private toHangar(): void {
@@ -351,7 +399,10 @@ export class App implements CommandSink {
   }
 
   private showResult(world: World): void {
-    if (this.resultShown || !this.lastRecord) return;
+    if (this.resultShown) return;
+    // After the tutorial there is no result card: the follow-up battle starts.
+    if (world.mode === 'tutorial') return this.startSortie('afterTutorial');
+    if (!this.lastRecord) return;
     this.resultShown = true;
     this.resultGuardUntil = performance.now() + RESULT_GUARD_MS;
     this.hud.hide();
@@ -427,6 +478,86 @@ export class App implements CommandSink {
     return new KeyMap(this.settings.keys, this.catalog.aimModes.map((m) => m.key));
   }
 
+  /** The tutorial objective for the HUD, with the current keys (touch screens: the touch wording). */
+  private objective(world: World): Objective | null {
+    const t = world.tutorial;
+    const P = world.player;
+    if (!t || !P) return null;
+    const stage = currentStage(t);
+    const touch = document.body.classList.contains('touch');
+    // Once the control is used, a stage with an after-text shows it, without key caps.
+    const after = t.used && !!stage.afterText && !!stage.afterTouchText;
+    const keys = touch || after ? [] : stage.keys.flatMap((k) => (k === 'slots' ? P.slots.map((_, i) => this.keymap.label(slotAction(i))) : [this.keymap.label(k)]));
+    const text = after
+      ? touch
+        ? { key: textKeys.tutorialAfterTouchText(stage.id), fallback: stage.afterTouchText! }
+        : { key: textKeys.tutorialAfterText(stage.id), fallback: stage.afterText! }
+      : touch
+        ? { key: textKeys.tutorialTouchText(stage.id), fallback: stage.touchText }
+        : { key: textKeys.tutorialText(stage.id), fallback: stage.text };
+    return { step: Math.min(t.index, t.stages.length - 1) + 1, total: t.stages.length, text, keys, done: t.clearedAt >= 0 };
+  }
+
+  /** The tutorial step's count over the ace (also on touch screens, and once the step is cleared). */
+  private stageCountFor(world: World): StageCount | null {
+    const t = world.tutorial;
+    const P = world.player;
+    const c = t && P && t.begun ? stageCount(t) : null;
+    if (!c || !P) return null;
+    const { width, height } = this.renderer.viewport;
+    const z = world.camera.zoom;
+    return {
+      x: width / 2 + (P.x - world.camera.x) * z,
+      y: height / 2 + (P.y - world.camera.y) * z - P.size * z * 0.5 - STAGE_COUNT_GAP,
+      ...c,
+    };
+  }
+
+  /**
+   * The tutorial's big key caps just under the ace: the keys the stage asks for (lit while held or
+   * just pressed) and the key last pressed. None on touch screens, between stages, or once a stage
+   * has moved on to its after-text.
+   */
+  private keyPromptFor(world: World): KeyPrompt | null {
+    const t = world.tutorial;
+    const P = world.player;
+    if (!t || !P || t.clearedAt >= 0 || world.status.over || document.body.classList.contains('touch')) return null;
+    const stage = currentStage(t);
+    if (t.used && stage.afterText) return null;
+    // Validation guarantees every stage key is an action id or 'slots'.
+    const actions = stage.keys.flatMap((k): ActionId[] => (k === 'slots' ? P.slots.map((_, i) => slotAction(i)) : [k as ActionId]));
+    if (actions.length === 0) return null;
+    const now = performance.now();
+    const bound = (a: ActionId) => this.keymap.bindings[a] ?? [];
+    // A control that is recharging shows grey, filling up as it charges (the dash).
+    const charge = (a: ActionId) => (a === 'dash' && P.dashCd > 0 ? 1 - P.dashCd / P.frame.dashCd : null);
+    const caps = actions.map((a) => ({
+      label: this.keymap.label(a),
+      on: bound(a).some((k) => this.keyboard.pressedRecently(k, KEY_LIT_MS, now)),
+      charge: charge(a),
+    }));
+    const last = this.keyboard.lastPress;
+    const pressed =
+      last && now - last.at < KEY_PRESSED_MS ? { label: keyLabel(last.key), match: actions.some((a) => bound(a).includes(last.key)) } : null;
+    const { width, height } = this.renderer.viewport;
+    const z = world.camera.zoom;
+    return {
+      x: width / 2 + (P.x - world.camera.x) * z,
+      y: height / 2 + (P.y - world.camera.y) * z + P.size * z * 0.5 + KEY_PROMPT_GAP,
+      caps,
+      cross: stage.keys.join() === 'up,left,down,right',
+      pressed,
+    };
+  }
+
+  /** Remembers that the player has done something for the first time (a control, the first launch). */
+  private learnControl(id: string): void {
+    const next = learn(this.career, id);
+    if (next === this.career) return;
+    this.career = next;
+    this.careerStore.save(next);
+  }
+
   /** Adds a finished sortie to the career (weapon kills, best score) and saves it. */
   private recordCareer(world: World): SortieRecord {
     const rating = rateSortie(world);
@@ -445,9 +576,18 @@ export class App implements CommandSink {
     return record;
   }
 
-  private startBattle(): World {
+  private startBattle(mode: SortieMode): World {
     const seed = this.seed ?? randomSeed();
-    const world = createBattleWorld(this.catalog, new SeededRandom(seed), this.editor.setup, this.renderer.viewport);
+    const random = new SeededRandom(seed);
+    const setup = this.editor.setup;
+    const viewport = this.renderer.viewport;
+    const prev = this.world?.player ? this.world : null;
+    const world =
+      mode === 'tutorial'
+        ? createTutorialWorld(this.catalog, random, setup, viewport)
+        : mode === 'afterTutorial' && prev
+          ? createFollowUpWorld(this.catalog, random, setup, viewport, prev, prev.mode === 'tutorial')
+          : createBattleWorld(this.catalog, random, setup, viewport);
     world.events.on('banner', ({ msg, tone, minor }) => {
       this.banner.show(tm(msg), tone, minor);
       if (tone) this.audio.play(tone === 'good' ? 'bannerGood' : 'bannerWarn');
@@ -460,13 +600,16 @@ export class App implements CommandSink {
       this.resetInput();
       this.audio.playMusic(world.status.win ? 'victory' : null);
       if (!world.status.win) this.audio.play('defeat');
-      this.lastRecord = this.recordCareer(world);
+      // The tutorial mission is practice: it counts toward no career record.
+      if (world.mode === 'tutorial') this.learnControl(TUTORIAL_DONE);
+      else this.lastRecord = this.recordCareer(world);
+      const delay = world.mode === 'tutorial' ? this.catalog.armies.tutorial.followUp.delay : this.catalog.battle.timing.resultDelay;
       this.resultTimer = window.setTimeout(() => {
         if (this.world === world) this.showResult(world);
-      }, this.catalog.battle.timing.resultDelay * 1000);
+      }, delay * 1000);
     });
     this.world = world;
-    this.sim = battlePipeline(this.moveInput);
+    this.sim = mode === 'tutorial' ? tutorialPipeline(this.moveInput) : battlePipeline(this.moveInput);
     this.commands = new PlayerCommands(world);
     console.info(`[battle] seed ${seed} (add ?seed=${seed} to the URL to replay this deployment)`);
     return world;
@@ -496,7 +639,12 @@ export class App implements CommandSink {
     this.renderer.render(world);
     if (world && !world.isDemo) {
       this.minimap.draw(world);
-      if (this.hud.visible) this.hud.update(world);
+      if (this.hud.visible) {
+        this.hud.update(world);
+        this.objectiveView.render(this.objective(world));
+        this.keyPrompt.render(this.keyPromptFor(world));
+        this.keyPrompt.renderCount(this.stageCountFor(world));
+      }
       const halfWidth = this.renderer.viewport.width / 2 / world.camera.zoom;
       this.battleAudio.update(world, { x: world.camera.x, y: world.camera.y, halfWidth });
     }

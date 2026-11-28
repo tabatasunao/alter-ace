@@ -8,6 +8,7 @@ import { CentroidSystem } from './systems/CentroidSystem';
 import { CleanupSystem } from './systems/CleanupSystem';
 import { DemoDirectorSystem } from './systems/DemoDirectorSystem';
 import { EffectSystem } from './systems/EffectSystem';
+import { GrazeSystem } from './systems/GrazeSystem';
 import { GridSystem } from './systems/GridSystem';
 import { HealSystem } from './systems/HealSystem';
 import { ImpactSystem } from './systems/ImpactSystem';
@@ -22,6 +23,7 @@ import { SeparationSystem } from './systems/SeparationSystem';
 import { ShieldSystem } from './systems/ShieldSystem';
 import { SoldierAISystem } from './systems/SoldierAISystem';
 import { StalkSystem } from './systems/StalkSystem';
+import { TutorialSystem } from './systems/TutorialSystem';
 import { UnitActionSystem } from './systems/UnitActionSystem';
 import { VictorySystem } from './systems/VictorySystem';
 
@@ -45,6 +47,7 @@ export function battlePipeline(input: MoveInput): Simulation {
     new SoldierAISystem(),
     new UnitActionSystem(),
     new ProjectileSystem(),
+    new GrazeSystem(),
     new EffectSystem(),
     new ImpactSystem(),
     new BattleClockSystem(),
@@ -52,6 +55,37 @@ export function battlePipeline(input: MoveInput): Simulation {
     new AlertSystem(),
     new PraiseSystem(),
     new VictorySystem(),
+    new CleanupSystem(),
+    new FollowCameraSystem(),
+  ]);
+}
+
+/**
+ * The tutorial mission: the battle systems, with TutorialSystem in place of reinforcements, army
+ * alerts and the victory check (the stages deploy the enemies, and the last stage wins).
+ */
+export function tutorialPipeline(input: MoveInput): Simulation {
+  return new Simulation([
+    new GridSystem(),
+    new SeparationSystem(),
+    new CentroidSystem(),
+    new AuraSystem(),
+    new HealSystem(),
+    new ShieldSystem(),
+    new PlayerStatusSystem(),
+    new ReleaseSystem(),
+    new PlayerMovementSystem(input),
+    new PlayerWeaponSystem(),
+    new StalkSystem(),
+    new SoldierAISystem(),
+    new UnitActionSystem(),
+    new ProjectileSystem(),
+    new GrazeSystem(),
+    new EffectSystem(),
+    new ImpactSystem(),
+    new BattleClockSystem(),
+    new PraiseSystem(),
+    new TutorialSystem(),
     new CleanupSystem(),
     new FollowCameraSystem(),
   ]);

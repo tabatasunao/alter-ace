@@ -10,5 +10,23 @@
     "playerStartX": 1700
   },
   "reinforcements": { "battalion": 60, "interval": 25, "fieldThreshold": 150, "edgeOffset": 170, "yMargin": 650 },
-  "demo": { "allies": 110, "enemies": 140, "groups": 3, "allyX": 2150, "enemyX": 3650, "groupSpacing": 520, "cameraX": 2900 }
+  "demo": { "allies": 110, "enemies": 140, "groups": 3, "allyX": 2150, "enemyX": 3650, "groupSpacing": 520, "cameraX": 2900 },
+  "tutorial": {
+    "playerStart": {"x": 1400, "y": 1700},
+    "spawnDistance": 700,
+    "spawnOffscreen": 400,
+    "stageGap": 1.2,
+    "respawnGap": 1.5,
+    "recenterStep": 1000,
+    "hpFloor": 0.2,
+    "followUp": { "allies": 30, "enemies": 150, "exact": { "commander": 1, "marksman": 1, "circus": 1, "duelist": 1 }, "delay": 4.5, "offscreen": 220, "groupSpacing": 300 },
+    "stages": [
+      {"id": "move", "text": "{keys} to move. Fly into each ring.", "touchText": "Drag anywhere on the field to move. Fly into each ring.", "keys": ["up", "left", "down", "right"], "markers": [{"dx": 550, "dy": 0, "radius": 110}, {"dx": 50, "dy": -300, "radius": 110}, {"dx": 500, "dy": 150, "radius": 110}], "spawn": []},
+      {"id": "dash", "text": "{keys} to dash: a burst of speed that also dodges enemy fire. Dash twice; the dash takes a moment to recharge.", "touchText": "Tap Dash to dash: a burst of speed that also dodges enemy fire. Dash twice; the dash takes a moment to recharge.", "keys": ["dash"], "use": "dash", "useCount": 2, "spawn": []},
+      {"id": "fire", "text": "Your ALTER fires on its own at enemies in range. Destroy the squad.", "touchText": "Your ALTER fires on its own at enemies in range. Destroy the squad.", "keys": [], "waves": 3, "groups": 2, "groupSpacing": 320, "spawn": [{"class": "trooper", "count": 6}]},
+      {"id": "weapons", "text": "{keys} switch weapons. Destroy 12 enemies with a beam weapon: beams score CRITICAL hits on heavy plate.", "touchText": "Tap a hardpoint to switch weapons. Destroy 12 enemies with a beam weapon: beams score CRITICAL hits on heavy plate.", "keys": ["slots"], "use": "weapons", "kill": {"count": 12, "damageType": "beam", "endsStage": true}, "groups": 2, "groupSpacing": 360, "spawn": [{"class": "bulwark", "count": 6}]},
+      {"id": "aim", "text": "{keys} change the aim mode, which picks the enemy your pilot targets. Destroy an enemy in the new mode.", "touchText": "Tap the aim button to change the aim mode, which picks the enemy your pilot targets. Destroy an enemy in the new mode.", "keys": ["aimPrev", "aimNext"], "use": "aim", "kill": {"count": 1, "whileChanged": true}, "waves": 3, "spacing": 16, "spawn": [{"class": "trooper", "count": 10}, {"class": "healer", "count": 1}]},
+      {"id": "fullArms", "text": "Full Arms is ready. Dive into the crowd and press {keys}.", "touchText": "Full Arms is ready. Dive into the crowd and tap Full Arms.", "afterText": "Destroy every enemy left.", "afterTouchText": "Destroy every enemy left.", "keys": ["release"], "use": "fullArms", "fillRelease": true, "spawn": [{"class": "trooper", "count": 90}, {"class": "striker", "count": 30}]}
+    ]
+  }
 }

@@ -27,6 +27,7 @@ export function renderReference(catalog: Catalog): string {
     '- [Unit classes](#unit-classes)',
     '- [Unit weapons](#unit-weapons)',
     '- [Armies](#armies)',
+    '- [Tutorial mission](#tutorial-mission)',
     '- [Battle rules](#battle-rules)',
     '',
   ];
@@ -37,6 +38,7 @@ export function renderReference(catalog: Catalog): string {
   classes(catalog, out);
   unitWeapons(catalog, out);
   armies(catalog, out);
+  tutorial(catalog, out);
   rules(catalog, out);
   return out.join('\n');
 }
@@ -300,6 +302,31 @@ function armies(catalog: Catalog, out: string[]): void {
   );
 }
 
+function tutorial(catalog: Catalog, out: string[]): void {
+  const tu = catalog.armies.tutorial;
+  out.push('## Tutorial mission', '');
+  out.push(
+    `The ace starts alone at (${tu.playerStart.x}, ${tu.playerStart.y}). At each stage start, and when the first mission takes over, the battle shifts in steps of ${tu.recenterStep} to bring the ace near the middle of the battlefield. Each stage's enemies deploy east of the ace, ${tu.spawnOffscreen} beyond the east edge of the view and at least ${tu.spawnDistance} away; the next stage starts ${sec(tu.stageGap)} after one is cleared. A stage's next wave deploys ${sec(tu.respawnGap)} after the last one is destroyed; once the waves are used up, the group deploys again after the same gap while a goal is open. The ace's HP never drops below ${Math.round(tu.hpFloor * 100)}% of its max HP. ${sec(tu.followUp.delay)} after the last stage, the first mission starts without the launch sequence: ${tu.followUp.allies} allies deploy ${tu.followUp.offscreen} beyond the west edge of the view and ${tu.followUp.enemies} enemies beyond the east edge (groups ${tu.followUp.groupSpacing} apart), with exactly ${Object.entries(tu.followUp.exact).map(([id, n]) => `${n} ${catalog.unitClass(id).name}`).join(', ')}.`,
+    '',
+  );
+  table(
+    out,
+    ['Stage', 'Rings (from the start point, radius)', 'Control', 'Kill goal', 'Enemies', 'Full Arms'],
+    'llllll',
+    tu.stages.map((s, i) => [
+      `${i + 1}. ${s.id}`,
+      s.markers?.map((m) => `(${m.dx}, ${m.dy}) r ${m.radius}`).join(' → ') || '–',
+      s.use ? `${s.use}${(s.useCount ?? 1) > 1 ? ` ×${s.useCount}` : ''}` : '–',
+      s.kill ? `${s.kill.count}${s.kill.damageType ? ` with ${s.kill.damageType} damage` : ''}${s.kill.whileChanged ? ' in the new mode' : ''}${s.kill.endsStage ? ', ends the stage' : ''}` : '–',
+      (s.spawn.map((g) => `${g.count} ${catalog.unitClass(g.class).name}`).join(', ') || '–') +
+        ((s.groups ?? 1) > 1 ? ` ×${s.groups} groups ${s.groupSpacing} apart` : '') +
+        (s.spacing ? `, spacing ${s.spacing}` : '') +
+        ((s.waves ?? 1) > 1 ? `, ${s.waves} waves` : ''),
+      s.fillRelease ? 'filled' : '–',
+    ]),
+  );
+}
+
 function countArmy(catalog: Catalog, size: number, mix: ArmyMix): Map<string, number> {
   const counts = new Map<string, number>();
   for (const id of armyList(size, mix, catalog.armies, new SeededRandom(1))) counts.set(id, (counts.get(id) ?? 0) + 1);
@@ -345,8 +372,8 @@ function rules(catalog: Catalog, out: string[]): void {
     ['Full Arms opening burst', `${n(sr.openingBurst)} s worth of each weapon's fire at once, ${sec(sr.openingIframes)} invulnerable`, '`player.superRelease.openingBurst`, `.openingIframes`'],
     [
       'Full Arms gauge',
-      `${pct(sr.charge.perKill)} per ace kill (${mul(sr.charge.closeKillMul)} within ${n(sr.charge.closeRadius)}), ${pct(sr.charge.perSecond)} per second; starts at ${pct(sr.charge.start)}; none while Full Arms runs`,
-      '`player.superRelease.charge` (`start`, `perKill`, `closeRadius`, `closeKillMul`, `perSecond`)',
+      `${pct(sr.charge.perKill)} per ace kill (${mul(sr.charge.closeKillMul)} within ${n(sr.charge.closeRadius)}), ${pct(sr.charge.perSecond)} per second, ${pct(sr.charge.perHpTaken)} per max HP of damage taken, ${pct(sr.charge.graze.perShot)} per enemy shot and ${pct(sr.charge.graze.perLine)} per line attack passing within ${n(sr.charge.graze.radius)} of the hull; starts at ${pct(sr.charge.start)}; none while Full Arms runs`,
+      '`player.superRelease.charge` (`start`, `perKill`, `closeRadius`, `closeKillMul`, `perSecond`, `perHpTaken`, `graze`)',
     ],
     ['Close dodge', `dash recharge refunded ${pct(p.dodge.dashRefund)}, Full Arms gauge +${pct(p.dodge.releaseCharge)}; once per dash`, '`player.dodge`'],
     ['Launch', `the ace boosts east at ${mul(p.launch.speed)} its top speed; camera ${mul(p.launch.zoom)} closer during the launch sequence`, '`player.launch` (`speed`, `zoom`)'],

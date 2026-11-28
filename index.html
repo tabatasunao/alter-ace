@@ -43,6 +43,14 @@
             <h1>ALTER<span class="sq" aria-hidden="true"></span></h1>
             <p class="acro"><b>A</b>daptive <b>L</b>imbframe for <b>T</b>actical <b>E</b>ngagement and <b>R</b>econnaissance</p>
             <p class="lede" data-i18n="hangar.lede">You fly the ace unit.</p>
+            <div class="first-card">
+              <h2 data-i18n="hangar.first.title">Tutorial mission</h2>
+              <p data-i18n="hangar.first.text">A short mission teaches the controls.</p>
+              <div class="actions">
+                <button type="button" class="btn btn-primary" id="btnTutorialStart" data-sound="none"><span data-i18n="hangar.first.start">Start tutorial</span> <kbd>Enter</kbd></button>
+                <button type="button" class="btn" id="btnCustomize" data-i18n="hangar.first.customize">Customize loadout</button>
+              </div>
+            </div>
           </header>
 
           <div class="cols">
@@ -74,10 +82,10 @@
                 <div class="army">
                   <div class="army-row">
                     <label for="enemyCount" data-i18n="hangar.enemyAlters">Enemy ALTERs</label>
-                    <output id="enemyOut" for="enemyCount">450</output>
+                    <output id="enemyOut" for="enemyCount">300</output>
                   </div>
-                  <input id="enemyCount" type="range" min="300" max="600" step="50" value="450">
-                  <div class="vs"><span><b class="p">1</b> <span data-i18n="hangar.vs.ace">ace</span></span><span><b class="a" id="vsAlly">100</b> <span data-i18n="hangar.vs.friendly">friendly</span></span><span><b class="e" id="vsEnemy">450</b> <span data-i18n="hangar.vs.hostile">hostile</span></span></div>
+                  <input id="enemyCount" type="range" min="300" max="600" step="50" value="300">
+                  <div class="vs"><span><b class="p">1</b> <span data-i18n="hangar.vs.ace">ace</span></span><span><b class="a" id="vsAlly">100</b> <span data-i18n="hangar.vs.friendly">friendly</span></span><span><b class="e" id="vsEnemy">300</b> <span data-i18n="hangar.vs.hostile">hostile</span></span></div>
                   <p class="record" id="armyBest"></p>
                   <p class="hint" id="deployNote"></p>
                   <details class="guide">
@@ -99,6 +107,7 @@
         <div class="launchbar">
           <div class="inner">
             <p class="summary" id="summary"></p>
+            <button type="button" class="btn" id="btnTutorial" data-sound="none" data-i18n="hangar.tutorial">Tutorial</button>
             <button type="button" class="btn" id="btnOptions" data-i18n="common.options">Options</button>
             <button type="button" class="btn-primary btn" id="btnLaunch" data-sound="none"><span data-i18n="hangar.launch">Launch sortie</span> <kbd>Enter</kbd></button>
           </div>
@@ -128,8 +137,12 @@
         </div>
 
         <div id="banner" role="status" aria-live="polite"></div>
+        <div id="keyPrompt" class="key-prompt" aria-hidden="true"></div>
+        <p id="stageCount" class="stage-count" aria-hidden="true"></p>
+        <p id="missionFlash" class="mission-flash" role="status" hidden></p>
 
         <div class="hud-bottom">
+          <p class="objective" id="objective" role="status" aria-live="polite"></p>
           <div class="pilot">
             <div class="pcode" id="pCode"></div>
             <div class="hp" id="pHpWrap"><i id="pHp"></i></div>

@@ -13,6 +13,7 @@ Terms used in the game, the code and these docs. Code names are in `code font`.
 | **ALTER** | Adaptive Limbframe for Tactical Engagement and Reconnaissance: the piloted combat frame every unit is |
 | **Armor** | A unit class's defense table: Standard, Heavy plate, Beam coating, Reactive armor. Scales hits by damage type |
 | **Arsenal** | The 6 weapons available for hardpoints, grouped by damage type |
+| **Near miss, graze** | Enemy fire that passes within 36 of the ace's hull without touching it; it charges the Full Arms gauge (`src/sim/graze.ts`, `GrazeSystem`) |
 | **Trait** | What a damage type's weapons do best: Kinetic fires fastest, Beam reaches farthest, Blast homes (`damage.json` → `trait`) |
 | **Sight line (Sniper Rifle)** | The beam-colored line from the ace to the Sniper Rifle's target for the last 0.45 s before each shot |
 | **Aura** | A Commander's radius (230) in which its army fires 30% faster. Enemy units it boosts glow magenta, as does the enemy Commander |
@@ -103,6 +104,7 @@ Terms used in the game, the code and these docs. Code names are in `code font`.
 | **Turn (charged attack)** | Permission to charge a lance or wind up a dash strike at the ace. At most 2 at once, their shots at least 0.6 s apart (`ai.aceCharges`) |
 | **Threat marker** | A small "!" badge on the screen edge, pointing toward an off-screen unit charging a lance or winding up a dash strike at the ace, or a stalking Duelist |
 | **Tone** | A semantic color name on a unit or effect (`ally`, `enemy`, `semiAce`, `accent`…) that the palette maps to CSS tokens |
+| **Tutorial mission** | A short mission that teaches the controls one stage at a time (`armies.json` → `tutorial`, `src/sim/systems/TutorialSystem.ts`) |
 | **Unit action** | Something an AI unit does over time, one at a time: a lance charge, a dash strike wind-up, a saber lunge or a hop back (`UnitAction`) |
 | **Unit weapon** | An AI class's weapon (`unitWeapons.json`), with behaviors `shot`, `missile`, `lance`, `saber` |
 | **`unitVsUnit`** | Scale on damage between AI units (0.15) |

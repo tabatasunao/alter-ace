@@ -26,7 +26,7 @@ export class ShotLayer implements WorldLayer {
       ctx.beginPath();
       for (const p of world.shots) {
         if (p.src !== 'player' || !inView(p)) continue;
-        for (const pass of SHOT_LOOKS[p.kind] as readonly ShotPass<Projectile>[]) pass.trace(ctx, p);
+        for (const pass of SHOT_LOOKS[p.kind] as readonly ShotPass<Projectile>[]) if (!pass.hideInFullArms) pass.trace(ctx, p);
       }
       ctx.globalAlpha = FULL_ARMS_GLOW.alpha;
       ctx.strokeStyle = palette.release;
@@ -38,6 +38,7 @@ export class ShotLayer implements WorldLayer {
       if (!inView(p)) continue;
       const white = fullArms && p.src === 'player';
       for (const pass of SHOT_LOOKS[p.kind] as readonly ShotPass<Projectile>[]) {
+        if (white && pass.hideInFullArms) continue;
         ctx.beginPath();
         pass.trace(ctx, p);
         const color = white ? palette.ace : pass.color(p, palette);

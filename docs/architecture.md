@@ -17,7 +17,7 @@ src/render       canvas layers and painters (reads World, never changes it)
 src/audio        sound effects and music: AudioEngine (Web Audio), BattleAudio (reads World, never changes it)
 src/ui           DOM views: hangar, HUD, result, pause, options, banner, launch sequence
 src/input        keyboard (through the KeyMap), touch joystick, wheel → CommandSink / MoveInput
-src/game         loadout model and storage, sortie rating, career (bests, medals), defeat tips, settings (no DOM)
+src/game         loadout model and storage, sortie rating, career (bests, medals, firsts), defeat tips, settings (no DOM)
 src/app          App: composition root and screen flow; GameLoop
 src/main.ts      boot: load and validate data, start the App, data hot reload (dev)
 ```
@@ -52,17 +52,20 @@ Dependencies point downward only. `src/sim` does not import `render`, `ui`, `inp
 | 12 | `SoldierAISystem` | Target selection, approach / kite / strafe, leashes, firing |
 | 13 | `UnitActionSystem` | Step unit actions (lance charges, saber lunges) |
 | 14 | `ProjectileSystem` | Move shots, resolve hits and splash |
-| 15 | `EffectSystem` | Age visual effects (also during hit-stop) |
-| 16 | `ImpactSystem` | Settle shake and flash, count down the hit-stop gap (also during hit-stop) |
-| 17 | `BattleClockSystem` | Battle timer |
-| 18 | `ReinforcementSystem` | Enemy battalions from the east edge |
-| 19 | `AlertSystem` | One-time banners |
-| 20 | `PraiseSystem` | Kill milestone and streak banners |
-| 21 | `VictorySystem` | Victory when no enemies remain |
-| 22 | `CleanupSystem` | Remove dead units |
-| 23 | `FollowCameraSystem` | Camera follows the ace (also during hit-stop) |
+| 15 | `GrazeSystem` | Near misses: enemy shots that pass close to the ace without touching it charge Full Arms |
+| 16 | `EffectSystem` | Age visual effects (also during hit-stop) |
+| 17 | `ImpactSystem` | Settle shake and flash, count down the hit-stop gap (also during hit-stop) |
+| 18 | `BattleClockSystem` | Battle timer |
+| 19 | `ReinforcementSystem` | Enemy battalions from the east edge |
+| 20 | `AlertSystem` | One-time banners |
+| 21 | `PraiseSystem` | Kill milestone and streak banners |
+| 22 | `VictorySystem` | Victory when no enemies remain |
+| 23 | `CleanupSystem` | Remove dead units |
+| 24 | `FollowCameraSystem` | Camera follows the ace (also during hit-stop) |
 
-`demoPipeline()` (hangar skirmish) runs the same systems except the ace systems (statuses, Full Arms, movement, weapons), `StalkSystem`, `ImpactSystem`, `BattleClockSystem`, `ReinforcementSystem`, `AlertSystem`, `PraiseSystem`, `VictorySystem` and `FollowCameraSystem`, and adds `DemoDirectorSystem` and `DemoCameraSystem`.
+`demoPipeline()` (hangar skirmish) runs the same systems except the ace systems (statuses, Full Arms, movement, weapons), `StalkSystem`, `GrazeSystem`, `ImpactSystem`, `BattleClockSystem`, `ReinforcementSystem`, `AlertSystem`, `PraiseSystem`, `VictorySystem` and `FollowCameraSystem`, and adds `DemoDirectorSystem` and `DemoCameraSystem`.
+
+`tutorialPipeline()` (tutorial mission) runs the battle systems except `ReinforcementSystem`, `AlertSystem` and `VictorySystem`, and adds `TutorialSystem` before `CleanupSystem`.
 
 ## Extension points
 
@@ -108,6 +111,7 @@ Other structural rules:
   - **Checks.** `tests/i18n.test.ts` fails when a language lacks a key, a translation changes a placeholder or tag, or the code or page uses a key with no English string.
 - **Launch sequence.** `App.launch` builds the battle paused, with the camera zoomed in by `player.launch.zoom`, and plays `LaunchView` (a DOM overlay animated in CSS). At its LAUNCH beat the battle unpauses and `launchAce` (`src/sim/launch.ts`) sets the ace moving east at `player.launch.speed` × its top speed, with afterimages and the `launch` impact; the camera eases back to the chosen zoom. When the overlay closes the HUD appears. A skip jumps to the LAUNCH beat and fades the overlay out.
 - **Defeat tips.** `src/game/tips.ts` is an ordered list of rules (`when`, `text`); the result card of a lost sortie shows the first that applies. A new tip is a new rule.
+- **Tutorial stages.** The tutorial mission's stages are data (`armies.json` → `tutorial.stages`). `tutorialPipeline()` runs the battle systems with `TutorialSystem` in place of reinforcements, army alerts and the victory check; it deploys each stage and clears it once its rings, control, kill goal and waves are done. At each stage start it shifts the whole battle (`shiftWorld()` in `src/sim/recenter.ts`: units, shots, effects and camera together) so the ace is near the middle; `createFollowUpWorld()` does the same when the first mission takes over, and carries the ace across. The control checks are in `usedControl()` (`src/sim/tutorial.ts`). A new stage that reuses those is a data change only; a new kind of control is a new `TutorialUse` value and a case in `usedControl()`.
 - **Dependency inversion.** The sim depends on `Random`, `MoveInput` and `GameEvents`, not on `Math.random`, the keyboard or the DOM. `App` is the only composition root.
 - **Colors.** The sim assigns a semantic `Tone`; the renderer maps it to CSS tokens via `readPalette()`.
 

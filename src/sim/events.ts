@@ -7,6 +7,9 @@ export interface GameEvents {
   battleEnded: { win: boolean };
   /** Dash pressed while recharging, or Full Arms pressed before the gauge is full. */
   actionDenied: { action: 'dash' | 'release' };
+  /** A tutorial stage has begun (0-based), or the one before it was cleared. */
+  tutorialStage: { index: number };
+  tutorialCleared: { index: number };
   /** The hangar's background skirmish has run out of one side. */
   demoExhausted: Record<string, never>;
 }

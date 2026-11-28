@@ -36,11 +36,14 @@ describe('praise and career', () => {
   });
 
   it('keeps only clean numbers from storage', () => {
-    expect(sanitizeCareer(null)).toEqual({ best: {}, kills: {}, furthest: {} });
-    expect(sanitizeCareer({ best: { 450: 4000, x: 'no', y: -1 }, kills: { rifle: 12, bad: NaN }, furthest: { 450: 0.5, 600: 2 } })).toEqual({
+    expect(sanitizeCareer(null)).toEqual({ best: {}, kills: {}, furthest: {}, learned: [] });
+    expect(
+      sanitizeCareer({ best: { 450: 4000, x: 'no', y: -1 }, kills: { rifle: 12, bad: NaN }, furthest: { 450: 0.5, 600: 2 }, learned: ['move', 3, '', 'move', 'dash'] }),
+    ).toEqual({
       best: { 450: 4000 },
       kills: { rifle: 12 },
       furthest: { 450: 0.5 },
+      learned: ['move', 'dash'],
     });
   });
 
@@ -52,13 +55,14 @@ describe('praise and career', () => {
   });
 
   it('adds weapon kills, reports each weapon’s new medal, and keeps the best score per army size', () => {
-    const start = { best: { 450: 4000 }, kills: { rifle: medals[0]!.kills - 1 }, furthest: { 450: 1 } };
+    const start = { best: { 450: 4000 }, kills: { rifle: medals[0]!.kills - 1 }, furthest: { 450: 1 }, learned: ['launch'] };
     const first = recordSortie(start, { enemies: 450, killsBy: { rifle: medals[1]!.kills, mortar: 3 }, score: 3500, progress: 1 }, medals);
     expect(first.career.kills).toEqual({ rifle: medals[0]!.kills - 1 + medals[1]!.kills, mortar: 3 });
     expect(first.medals).toEqual([{ weapon: 'rifle', medal: medals[1] }]); // its highest new medal only
     expect(first.newBest).toBe(false);
     expect(first.career.best).toEqual({ 450: 4000 });
     expect(start.kills.rifle).toBe(medals[0]!.kills - 1); // the old career is untouched
+    expect(first.career.learned).toEqual(['launch']); // learned controls carry over
 
     const better = recordSortie(first.career, { enemies: 450, killsBy: {}, score: 4500, progress: 1 }, medals);
     expect(better).toMatchObject({ newBest: true, previousBest: 4000 });

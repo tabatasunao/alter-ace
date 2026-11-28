@@ -44,7 +44,7 @@
       "openingBurst": 7.5,
       "openingIframes": 0.6,
       "damageTakenMul": 0.5,
-      "charge": { "start": 0.5, "perKill": 0.012, "closeRadius": 320, "closeKillMul": 2.5, "perSecond": 0.016 }
+      "charge": { "start": 0.5, "perKill": 0.012, "closeRadius": 320, "closeKillMul": 2.5, "perSecond": 0.016, "perHpTaken": 0.5, "graze": { "radius": 36, "perShot": 0.008, "perLine": 0.06, "markGap": 0.12 } }
     },
     "dodge": { "dashRefund": 1, "releaseCharge": 0.15 },
     "launch": { "speed": 1.4, "zoom": 1.6 }

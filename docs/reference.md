@@ -14,6 +14,7 @@ Numbers are the raw data values. Distances are world units (the battlefield is
 - [Unit classes](#unit-classes)
 - [Unit weapons](#unit-weapons)
 - [Armies](#armies)
+- [Tutorial mission](#tutorial-mission)
 - [Battle rules](#battle-rules)
 
 ## Ace frames
@@ -130,22 +131,35 @@ ace by 0.5 (`aceDamageTaken`). Units close to about 82% of their range.
 
 Unit counts per army (exact: counts are rounded shares, raised to the minimums; only the order is random):
 
-| Class | Allies (100) | Enemies (300) | Enemies (450) | Enemies (600) |
-| --- | --: | --: | --: | --: |
-| Trooper | 30 | 84 | 129 | 174 |
-| Beam Trooper | 20 | 54 | 81 | 108 |
-| Striker | 18 | 39 | 59 | 78 |
-| Bulwark | 12 | 27 | 41 | 54 |
-| Lancer | 8 | 15 | 23 | 30 |
-| Sentinel | 4 | 14 | 20 | 27 |
-| Hornet | 4 | 11 | 16 | 21 |
-| Prism | 0 | 18 | 27 | 36 |
-| Breacher | 0 | 21 | 32 | 42 |
-| Marksman | 0 | 2 | 2 | 3 |
-| Circus | 0 | 2 | 2 | 3 |
-| Duelist | 0 | 2 | 2 | 3 |
-| Commander | 2 | 5 | 7 | 9 |
-| Healer | 2 | 6 | 9 | 12 |
+| Class | Allies (100) | Enemies (300) | Enemies (600) |
+| --- | --: | --: | --: |
+| Trooper | 30 | 84 | 174 |
+| Beam Trooper | 20 | 54 | 108 |
+| Striker | 18 | 39 | 78 |
+| Bulwark | 12 | 27 | 54 |
+| Lancer | 8 | 15 | 30 |
+| Sentinel | 4 | 14 | 27 |
+| Hornet | 4 | 11 | 21 |
+| Prism | 0 | 18 | 36 |
+| Breacher | 0 | 21 | 42 |
+| Marksman | 0 | 2 | 3 |
+| Circus | 0 | 2 | 3 |
+| Duelist | 0 | 2 | 3 |
+| Commander | 2 | 5 | 9 |
+| Healer | 2 | 6 | 12 |
+
+## Tutorial mission
+
+The ace starts alone at (1400, 1700). At each stage start, and when the first mission takes over, the battle shifts in steps of 1000 to bring the ace near the middle of the battlefield. Each stage's enemies deploy east of the ace, 400 beyond the east edge of the view and at least 700 away; the next stage starts 1.2 s after one is cleared. A stage's next wave deploys 1.5 s after the last one is destroyed; once the waves are used up, the group deploys again after the same gap while a goal is open. The ace's HP never drops below 20% of its max HP. 4.5 s after the last stage, the first mission starts without the launch sequence: 30 allies deploy 220 beyond the west edge of the view and 150 enemies beyond the east edge (groups 300 apart), with exactly 1 Commander, 1 Marksman, 1 Circus, 1 Duelist.
+
+| Stage | Rings (from the start point, radius) | Control | Kill goal | Enemies | Full Arms |
+| --- | --- | --- | --- | --- | --- |
+| 1. move | (550, 0) r 110 → (50, -300) r 110 → (500, 150) r 110 | – | – | – | – |
+| 2. dash | – | dash ×2 | – | – | – |
+| 3. fire | – | – | – | 6 Trooper ×2 groups 320 apart, 3 waves | – |
+| 4. weapons | – | weapons | 12 with beam damage, ends the stage | 6 Bulwark ×2 groups 360 apart | – |
+| 5. aim | – | aim | 1 in the new mode | 10 Trooper, 1 Healer, spacing 16, 3 waves | – |
+| 6. fullArms | – | fullArms | – | 90 Trooper, 30 Striker | filled |
 
 ## Battle rules
 
@@ -166,7 +180,7 @@ Unit counts per army (exact: counts are rounded shares, raised to the minimums; 
 | Regeneration | 3% of max HP per second after 4 s without damage | `player.regen*` |
 | Full Arms | 3 s of every weapon firing; damage taken ×0.5 | `player.superRelease` |
 | Full Arms opening burst | 7.5 s worth of each weapon's fire at once, 0.6 s invulnerable | `player.superRelease.openingBurst`, `.openingIframes` |
-| Full Arms gauge | 1.2% per ace kill (×2.5 within 320), 1.6% per second; starts at 50%; none while Full Arms runs | `player.superRelease.charge` (`start`, `perKill`, `closeRadius`, `closeKillMul`, `perSecond`) |
+| Full Arms gauge | 1.2% per ace kill (×2.5 within 320), 1.6% per second, 50% per max HP of damage taken, 0.8% per enemy shot and 6% per line attack passing within 36 of the hull; starts at 50%; none while Full Arms runs | `player.superRelease.charge` (`start`, `perKill`, `closeRadius`, `closeKillMul`, `perSecond`, `perHpTaken`, `graze`) |
 | Close dodge | dash recharge refunded 100%, Full Arms gauge +15%; once per dash | `player.dodge` |
 | Launch | the ace boosts east at ×1.4 its top speed; camera ×1.6 closer during the launch sequence | `player.launch` (`speed`, `zoom`) |
 | Critical HP warning | below 25% | `alerts.criticalHp` |
@@ -205,4 +219,4 @@ Praise banners: every 100 ace kills; 25 kills within 4 s (then quiet for 15 s); 
 Weapon medals (career kills with one weapon): Bronze 100, Silver 500, Gold 2000.
 
 Default loadout: named ALTER; frame Speed 5, HP 5, Reload 5, Fire rate 5, Dash 5; Bazooka, Railgun, Sniper Rifle, Missile Pod;
-Closest aim; 450 enemies.
+Closest aim; 300 enemies.

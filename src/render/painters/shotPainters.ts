@@ -14,6 +14,8 @@ export interface ShotPass<P extends Projectile = Projectile> {
   color(p: P, palette: Palette): string;
   /** Line width for strokes. */
   width?(p: P): number;
+  /** Not drawn for the ace's shots while Full Arms runs (a missile's trail). */
+  readonly hideInFullArms?: boolean;
   /** Adds the shot's shape to the path ShotLayer just began. Start with moveTo; never beginPath, stroke or fill. */
   trace(ctx: CanvasRenderingContext2D, p: P): void;
 }
@@ -59,9 +61,11 @@ export const SHOT_LOOKS: ShotLookRegistry = {
       trace: (ctx, p) => streak(ctx, p, BEAM_TRAIL),
     },
   ],
+  // During Full Arms the ace's missiles drop the trail and show only the glowing head.
   missile: [
     {
       mode: 'stroke',
+      hideInFullArms: true,
       color: (p, palette) =>
         p.src === 'player' ? palette.aimLine : terminal(p) ? palette.tone(toneOf(p.team, p.src, p.semiAce)) : palette.dim(toneOf(p.team, p.src, p.semiAce)),
       width: () => 2,

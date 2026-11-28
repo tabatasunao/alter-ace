@@ -17,6 +17,9 @@ function onControl(target: EventTarget | null): boolean {
  */
 export class KeyboardInput implements MoveInput {
   private readonly held = new Set<string>();
+  /** When each key was last pressed during play (performance.now() ms), and the last key pressed. */
+  private readonly pressedAt = new Map<string, number>();
+  private last: { key: string; at: number } | null = null;
 
   constructor(
     private readonly sink: CommandSink,
@@ -46,6 +49,16 @@ export class KeyboardInput implements MoveInput {
     this.held.clear();
   }
 
+  /** Whether `key` is held, or was pressed within the last `ms` (the tutorial's key prompt). */
+  pressedRecently(key: string, ms: number, now = performance.now()): boolean {
+    return this.held.has(key) || now - (this.pressedAt.get(key) ?? -Infinity) < ms;
+  }
+
+  /** The last key pressed during play, and when. */
+  get lastPress(): { readonly key: string; readonly at: number } | null {
+    return this.last;
+  }
+
   private onKeyDown(e: KeyboardEvent): void {
     const mode = this.sink.inputMode();
     if (mode === 'options') return;
@@ -73,6 +86,11 @@ export class KeyboardInput implements MoveInput {
       return;
     }
 
+    if (!e.repeat) {
+      const now = performance.now();
+      this.pressedAt.set(k, now);
+      this.last = { key: k, at: now };
+    }
     const map = this.keys();
     const action = map.action(k);
     if (action || map.aim(k) >= 0) e.preventDefault();
