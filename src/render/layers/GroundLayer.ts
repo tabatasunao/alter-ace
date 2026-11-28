@@ -3,9 +3,10 @@ import { unitTone } from '../../sim/entities';
 import type { WorldFrame, WorldLayer } from '../layers';
 import { withAlpha } from '../palette';
 
-/** Things on the ground under the units: aura rings and mortar landing markers. */
+/** Things on the ground under the units: aura rings, mortar landing markers and the tutorial's ring. */
 export class GroundLayer implements WorldLayer {
-  draw({ ctx, world, palette, view }: WorldFrame): void {
+  draw(frame: WorldFrame): void {
+    const { ctx, world, palette, view } = frame;
     const z = view.zoom;
     ctx.lineWidth = 1 / z;
     for (const u of world.units) {
@@ -25,5 +26,22 @@ export class GroundLayer implements WorldLayer {
       ctx.stroke();
     }
     ctx.setLineDash([]);
+    this.drawMarker(frame);
+  }
+
+  /** The tutorial's ring to fly into: a gold disc with a ring that breathes. */
+  private drawMarker({ ctx, world, palette, view }: WorldFrame): void {
+    const m = world.tutorial?.marker;
+    if (!m) return;
+    const pulse = 0.5 + 0.5 * Math.sin(world.t * 4);
+    ctx.fillStyle = withAlpha(palette.accent, 0.08 + 0.06 * pulse);
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, m.r, 0, TAU);
+    ctx.fill();
+    ctx.lineWidth = 2 / view.zoom;
+    ctx.strokeStyle = withAlpha(palette.accent, 0.55 + 0.35 * pulse);
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, m.r * (1 + 0.06 * pulse), 0, TAU);
+    ctx.stroke();
   }
 }

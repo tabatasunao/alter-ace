@@ -120,6 +120,8 @@ Marksman, Circus and Duelist (`"semiAce": true`, `shield` 1.5 s / 10 s). The Due
 | `battle.enemies` | `initial` (deployed at start), `groups`, `x`, `xJitter`, `groupSpacing` |
 | `reinforcements` | `battalion` (size), `interval` (s), `fieldThreshold` (send early below this), `edgeOffset`, `yMargin` |
 | `demo` | Hangar skirmish: `allies`, `enemies`, `groups`, positions |
+| `tutorial` | The tutorial mission: `playerStart` (`x`, `y`), `spawnDistance` and `spawnOffscreen` (enemies deploy east of the ace, `spawnOffscreen` beyond the east edge of the view and at least `spawnDistance` away), `stageGap` (s between stages), `recenterStep` (at each stage start and when the first mission takes over, the battle shifts in whole steps of this size to bring the ace near the middle; 1000 matches the ground grid's sectors); `respawnGap` (s before a stage's next wave deploys, or its group deploys again when the last wave is destroyed before its other goals are met), `hpFloor` (the ace's HP never drops below this share), `followUp` (the first mission, which starts by itself `delay` s after the tutorial, without the launch sequence: `allies` deploy `offscreen` beyond the west edge of the view and `enemies` beyond the east edge, groups `groupSpacing` apart; `exact` fixes the count of those enemy classes, the rest follow `enemyMix`), `stages` |
+| `tutorial.stages[]` | `id`; `text` and `touchText` (the objective in English; `{keys}` is where the key caps go); `keys` (action ids, or `slots` for every hardpoint key); optional `markers` (rings flown through in order: `dx`, `dy` from where the ace was when the stage began, `radius`); optional `use` (`weapons`, `aim`, `dash` or `fullArms`); optional `useCount` (separate uses needed, default 1); optional `kill` (kills after the control is used: `count`, optional `damageType` (any weapon counts if no hardpoint carries it), optional `whileChanged` (only while the control still differs from the start), optional `endsStage` (meeting the goal clears the stage at once: enemies still on the field withdraw and unsent waves are dropped)); optional `afterText` and `afterTouchText` (the objective once the control is used); optional `fillRelease` (fill the Full Arms gauge); optional `waves` (times the enemies deploy, each wave after the last is destroyed, default 1); optional `groups` and `groupSpacing` (each wave is this many blocks of `spawn`, this far apart north to south, default 1); optional `spacing` (distance between units in a block, in place of `formation.spacing`); `spawn` (`class`, `count`). A stage is cleared once every ring is reached, the control used, the kill goal met and every wave destroyed. Translations go under `tutorial.<id>.text`, `.touchText`, `.afterText` and `.afterTouchText` |
 
 Counts are rounded shares, raised to the minimums; only the order is random.
 
@@ -186,6 +188,10 @@ Top speed is the frame's `speed` (× running statuses' `speed`); acceleration sc
 | `charge.perKill` | 0.012 | Gauge per enemy the ace destroys |
 | `charge.closeRadius`, `charge.closeKillMul` | 320, 2.5 | Kills within this distance count this many times |
 | `charge.perSecond` | 0.016 | Gauge per second |
+| `charge.perHpTaken` | 0.5 | Gauge per max HP of damage the ace takes |
+| `charge.graze.radius` | 36 | Enemy fire passing within this distance of the ace's hull without touching it is a near miss |
+| `charge.graze.perShot`, `charge.graze.perLine` | 0.008, 0.06 | Gauge per near-miss shot, and per near-miss line attack (lance, mega-beam) |
+| `charge.graze.markGap` | 0.12 | At most one near-miss ring on the ace per this many seconds |
 
 The gauge is 0–1 and charges only while Full Arms is not running. Each weapon behavior's `burst` defines its spray. `weapons.json` → `burstArc` (degrees, default 360) limits the spray to a front arc (60 for the Railgun and Sniper Rifle). Full Arms is a `Status` with `allWeapons` plus `Player.release`, run by `ReleaseSystem`.
 

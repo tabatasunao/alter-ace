@@ -19,7 +19,7 @@ ALTER is a top-down, real-time 2D mass battle game that runs in the browser. Eve
 
 ## Sortie flow
 
-1. **Hangar.** The player picks a frame, fills four hardpoints, picks an aim mode and sets the enemy army size. An AI-only skirmish (110 allies, 140 enemies) runs behind the menu. The loadout is saved in the browser.
+1. **Hangar.** The player picks a frame, fills four hardpoints, picks an aim mode and sets the enemy army size. An AI-only skirmish (110 allies, 140 enemies) runs behind the menu. The loadout is saved in the browser. On a first visit, a tutorial card takes the place of the loadout columns and the controls: **Start tutorial** (or Enter) starts the [tutorial mission](#tutorial-mission), **Customize loadout** opens the full hangar, and **Launch sortie** in the launch bar starts a normal sortie. After the tutorial is completed or a sortie is launched, the hangar always opens in full.
 2. **Deployment.**
    - **Allies:** 100 units in three groups on the west side.
    - **Enemies:** up to 240 units in four groups on the east side. The rest are held in reserve.
@@ -86,7 +86,7 @@ Weapons do not fire during a Beam Saber lunge or a dash.
 
 | Screen | Key | Action |
 | --- | --- | --- |
-| Hangar | Enter, Space | Launch sortie (when no button or field has focus) |
+| Hangar | Enter, Space | Launch sortie (when no button or field has focus). On a first visit: start the tutorial |
 | Launch sequence | Any key, click | Skip to the launch |
 | Sortie over, before the result card | Any key | Show the result card now |
 | Result card | Space, Enter or any other key | Sortie again. Ignored for the first 0.45 s of the card |
@@ -102,6 +102,7 @@ Weapons do not fire during a Beam Saber lunge or a dash.
 | Enemy army | Slider, 300–600. Below it: the best rating and rank against this army size (or, before a victory, the furthest share of it destroyed), and the enemy field guide, folded by default, listing every unit class with its shape, weapon, armor and traits |
 | Hardpoints | Four, filled from 6 weapons; all four must be filled. The arsenal is grouped in rows by damage type, each labeled with its trait (Kinetic: fastest fire, Beam: longest reach, Blast: homing). On narrow screens it is one list. Picking a weapon puts it in the first empty hardpoint; picking an equipped weapon (or its hardpoint) empties that hardpoint, and the others keep their places and keys. Each card shows the weapon's damage type, its strong and weak armor matchups, its medal and career kills |
 | Controls | The current key bindings in one strip, and what Full Arms does |
+| Tutorial | Starts the [tutorial mission](#tutorial-mission) |
 | Options | Opens [Options](#options) |
 | Launch sortie | Starts the battle (Enter or Space too) and saves the loadout. Pressed while the loadout cannot launch, the button shakes, the reason flashes, and the empty hardpoints flash and scroll into view |
 
@@ -112,6 +113,23 @@ The hangar puts the hardpoints and arsenal in the wide left column, and the fram
 Audio starts with the first click or key press (browsers block it before one). The hangar plays its own music; the battle music fades in at launch and fades out when the sortie ends, with a short sting after a victory. Pausing lowers the music, and hiding the tab silences everything.
 
 The ace's weapons sound on every shot. Explosions, unit deaths, enemy beams and enemy fire sound by where they are: quieter and panned to the side away from the middle of the view, silent far beyond its edge. Allied fire is silent. A dash, Full Arms, hits on the ace, close dodges, saber clashes, banners and the launch sequence each have their own sound.
+
+## Tutorial mission
+
+A short mission that teaches the controls one at a time. The ace flies its current loadout alone, without allies, against small enemy groups. It starts at a first visit (the hangar's tutorial card, or Enter) or from **Tutorial** in the hangar's launch bar, and it goes through the launch sequence like a sortie.
+
+| Stage | Objective | Cleared when |
+| --- | --- | --- |
+| 1 | Fly through three rings, one at a time: 550 east of the start point, back to 50 east and 300 north, then 500 east and 150 south | The ace has flown through all three in order |
+| 2 | Dash twice (the dash recharges in between) | The ace has dashed twice |
+| 3 | Destroy 3 waves, each two squads of 6 Troopers (firing is automatic) | All three waves are destroyed |
+| 4 | Switch weapons against two blocks of 6 Bulwarks (heavy plate: beam weapons score CRITICAL) | After a weapon switch, the ace destroys 12 enemies with a beam weapon; the stage then ends at once, and any Bulwarks still standing withdraw |
+| 5 | Change the aim mode against 3 waves, each a tight block of 10 Troopers and a Healer | After an aim mode change, the ace destroys an enemy while still in a different mode from the start, and all three waves are destroyed |
+| 6 | Full Arms (the gauge is filled) into 90 Troopers and 30 Strikers | Full Arms is used and every enemy left is destroyed |
+
+When a stage starts, the battlefield shifts in whole sectors (1000) so the ace is near its middle; the camera shifts with it, so nothing jumps on screen and the ace keeps flying, and only the minimap and the sector labels show the change. Each stage's enemies deploy east of the ace when the stage starts, 400 beyond the east edge of the view (at least 700 from the ace), and close in; in a stage with waves, the next wave deploys the same way 1.5 s after the last one is destroyed. Only the next ring of stage 1 shows at a time. In stage 4, if no hardpoint carries a beam weapon, a kill with any weapon counts. The objective line above the hardpoints shows the stage number, the objective and its current keys (on touch screens, the button or gesture instead), and a check mark once the stage is cleared. Over the ace, a count shows how far along the stage is: kills toward the kill goal in stage 4 (00/12), else destroyed/total for the stage's enemies over all its waves (for example 07/36; the total grows if a group has to come again), or else rings reached or dashes done; and turns gold once complete. With a keyboard, the stage's keys also show as large key caps just under the ace; a cap lights up while its key is held or just after it is pressed, a recharging dash shows grey and fills as it charges, and under the caps the last key pressed shows for a moment (in the accent color when it is one of the stage's keys). Once Full Arms is used in stage 6, the objective changes to destroying every enemy left. If the last wave is destroyed before the stage's other goals are met, the same group deploys again 1.5 s later, as often as needed. A banner marks each cleared stage, and the next stage starts 1.2 s later. The ace's HP never drops below 20% of its max HP, so the tutorial cannot be lost. The HUD shows no allied force panel, and the enemy count includes the groups still to come.
+
+Clearing the last stage ends the mission with a **Tutorial complete** banner. 4.5 s later the first mission starts on its own, without the launch sequence. The battlefield shifts the same way, and the ace carries on exactly as it was (position and motion, HP, Full Arms gauge or a Full Arms still running, ammo and reloads, active weapon, aim mode, dash recharge), the camera keeps its zoom, and the screen shakes and flashes as **Begin first mission** flashes across the middle of the screen. 30 allies deploy just off the west edge of the view and 150 enemies just off the east edge, all at once with no reserve, and close in. The enemy army has exactly one Commander and one of each semi-ace; the rest follow the usual enemy mix. Enter starts the mission before the 4.5 s are up, and Esc returns to the hangar instead. In every other way it is a normal sortie: it ends with the result card, counts toward bests (at 150 enemies) and weapon medals, and **Restart sortie** in its pause card restarts it with a fresh ace where the ace is, again without the launch sequence. During the tutorial, **Restart sortie** restarts the tutorial. The tutorial counts toward no rating, best, furthest share or weapon medal. Completing it, or launching any normal sortie, ends the first visit.
 
 ## Pause
 
@@ -141,7 +159,7 @@ The system setting for reduced motion scales shake and flash down further, to 30
 | Top right | Minimap and pause button |
 | Center | Banners |
 | Bottom left | The ALTER's name, HP bar in ten segments (red when critical) with the HP readout, Dash chip, and Full Arms chip |
-| Bottom center | The four hardpoints, each with its key. A weapon shows its ammo, "Reloading" with a progress bar, or ∞. The active weapon is highlighted |
+| Bottom center | The four hardpoints, each with its key. A weapon shows its ammo, "Reloading" with a progress bar, or ∞. The active weapon is highlighted. In the tutorial, the objective line sits above them |
 | Bottom right | The current aim mode and its cycle keys. The grid of all modes opens for 2.2 s when the mode changes, and stays open after a click on the header. On narrow screens the grid becomes an aim button. On touch screens: Full Arms and Dash buttons |
 
 Counters (enemies, allies, kills) are zero-padded to three digits, with the leading zeros dimmed.
@@ -165,12 +183,13 @@ The HUD's breakpoints follow its own width, so the HUD size setting moves them: 
 | Magenta glow | An enemy Commander, and each enemy unit its aura is boosting. A unit's glow fades as it leaves the aura |
 | Ring expanding from a Healer | A heal pulse |
 | Gold | The ace's own markers: the target reticle, thrust, the active hardpoint and aim mode, ready chips |
-| Lime yellow | Full Arms: the gauge ring, the Full Arms chip and button, the **FULL ARMS READY** and **×N** callouts, the ring around the ace while Full Arms runs, and, while it runs, the glow under the ace's shots (which turn white) and around its beams, slugs and slashes |
+| Lime yellow | Full Arms: the gauge ring, the Full Arms chip and button, the **FULL ARMS READY** and **×N** callouts, the ring around the ace while Full Arms runs, and, while it runs, the glow under the ace's shots (which turn white; missiles show only the head, without a trail) and around its beams, slugs and slashes |
 | Arc close around the ace | The ace's HP, while hurt. Red when critical |
 | Short arc under the ace | The dash: fills as it recharges, gold when ready |
 | Beam-colored sight line from the ace to its target, with a ring closing in (Sniper Rifle active) | The Sniper Rifle's next shot: it fires when the ring closes |
 | Arc above the ace (Railgun active) | Steady aim: fills as the ace slows. White and thick at full strength |
 | Ring around the ace, building up clockwise | The Full Arms gauge filling. The ring marks the close-kill radius (320) |
+| Brief lime ring on the ace | A near miss: enemy fire passed close without touching the ace, and the Full Arms gauge gained ([mechanics.md](mechanics.md#full-arms)) |
 | Pulsing ring around the ace | Full Arms is ready. A wave and a **FULL ARMS READY** callout mark the moment it fills, and the Full Arms chip flashes |
 
 ### Shapes

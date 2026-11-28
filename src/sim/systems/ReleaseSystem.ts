@@ -4,8 +4,8 @@ import type { World } from '../World';
 import { msg } from '../messages';
 
 /**
- * Full Arms over time: while it is not running the gauge fills at its per-second rate (kills and
- * close dodges add the rest). When it ends, a Full Arms that downed enough enemies gets a banner
+ * Full Arms over time: while it is not running the gauge fills at its per-second rate (kills,
+ * close dodges, damage taken and near misses add the rest). When it ends, a Full Arms that downed enough enemies gets a banner
  * and a callout.
  */
 export class ReleaseSystem implements System {

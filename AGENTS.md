@@ -48,9 +48,9 @@ src/
   i18n/               languages: locales/*.json string tables, t()/tm(), data-file text (data.ts), page text (static.ts)
   render/             canvas renderer: layers/ (order) and painters/ (drawing)
   audio/              sound effects and music (sounds.ts lists them; files in public/audio)
-  ui/                 DOM views: hangar, HUD, result, pause, options, banner, launch sequence
+  ui/                 DOM views: hangar, HUD, tutorial objective, key prompt and step count, first-mission title, result, pause, options, banner, launch sequence
   input/              keyboard and key map, touch joystick, wheel
-  game/               loadout model and storage, sortie rating, career (bests, medals), defeat tips, settings
+  game/               loadout model and storage, sortie rating, career (bests, medals, firsts), defeat tips, settings
   style.css           styles and color tokens
 tests/                Vitest tests against the real data files
   helpers.ts          battle(), arena(), addSoldier()
@@ -116,7 +116,7 @@ Checks that run on every `npm test`:
 | `tests/docs.test.ts` | `docs/reference.md` does not match the data, a relative link or `#anchor` in the docs is broken, or a page in `docs/` is not linked from `docs/README.md` |
 | `tests/simulation.test.ts` | Whole battles: deployment, reinforcements, victory, seeded replay |
 
-Other test files: `load`, `heal`, `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `dodge`, `impact`, `praise`, `closeQuarters`, `aceCharges`, `mortarStun`, `weaponPersonality`, `unitWeapons`, `semiAces`, `aimModes`, `movement`, `loadout`, `settings`, `ui`, `i18n`, `audio`.
+Other test files: `load`, `heal`, `core`, `spatialGrid`, `combat`, `damage`, `weapons`, `superRelease`, `dodge`, `impact`, `praise`, `closeQuarters`, `aceCharges`, `mortarStun`, `weaponPersonality`, `unitWeapons`, `semiAces`, `aimModes`, `movement`, `loadout`, `settings`, `ui`, `i18n`, `audio`, `tutorial`, `graze`, `importCycle`.
 
 ## Debugging
 

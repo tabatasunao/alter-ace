@@ -10,8 +10,9 @@ import { newImpactState, type ImpactState } from './impact';
 import { SpatialGrid } from './SpatialGrid';
 import { UnitFactory } from './UnitFactory';
 import { msg, type Message } from './messages';
+import type { TutorialState } from './tutorial';
 
-export type WorldMode = 'demo' | 'battle';
+export type WorldMode = 'demo' | 'battle' | 'tutorial';
 
 export interface BattleStats {
   enemyTotal: number;
@@ -54,6 +55,8 @@ export class World {
   shots: Projectile[] = [];
   fx: Effect[] = [];
   player: Player | null = null;
+  /** The tutorial mission's progress (tutorial worlds only). */
+  tutorial: TutorialState | null = null;
 
   readonly stats: BattleStats = {
     enemyTotal: 0,
@@ -130,12 +133,13 @@ export class World {
     this.events.emit('banner', { msg: message, tone, minor });
   }
 
-  endBattle(win: boolean): void {
+  /** Ends the battle, with a banner (victory or defeat unless `message` names another). */
+  endBattle(win: boolean, message?: Message): void {
     if (this.status.over) return;
     this.status.over = true;
     this.status.win = win;
     this.status.endAt = this.t;
-    this.banner(msg(win ? 'banner.victory' : 'banner.defeat'), win ? 'good' : 'warn');
+    this.banner(message ?? msg(win ? 'banner.victory' : 'banner.defeat'), win ? 'good' : 'warn');
     this.events.emit('battleEnded', { win });
   }
 }

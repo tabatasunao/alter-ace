@@ -481,6 +481,89 @@ export interface ArmiesData {
     groupSpacing: number;
     cameraX: number;
   };
+  tutorial: TutorialData;
+}
+
+/** A control a tutorial stage asks the player to use. */
+export type TutorialUse = 'weapons' | 'aim' | 'dash' | 'fullArms';
+
+/** A ring to fly into, placed `dx`, `dy` from where the ace was when its stage began. */
+export interface TutorialMarker {
+  dx: number;
+  dy: number;
+  radius: number;
+}
+
+/**
+ * One stage of the tutorial mission. It is cleared when the ace has flown through its rings in
+ * order, used its control, met its kill goal and destroyed its enemies (each where the stage has one).
+ */
+export interface TutorialStage {
+  id: string;
+  /** The objective, in English. `{keys}` is where the key caps go. */
+  text: string;
+  /** The objective on touch screens (no key caps). */
+  touchText: string;
+  /** Actions whose keys fill `{keys}`; `slots` stands for every hardpoint key. */
+  keys: string[];
+  /** Rings to fly into, one at a time, in order. */
+  markers?: TutorialMarker[];
+  /** The control to use, and how many separate times (default 1). */
+  use?: TutorialUse;
+  useCount?: number;
+  /**
+   * Kills the ace must score after using the control: `count` of them, with a weapon of
+   * `damageType` (when a hardpoint carries one), and with `whileChanged` only while the control
+   * still differs from how the stage began (a kill in the new aim mode). With `endsStage`, meeting
+   * the goal clears the stage at once: enemies still on the field withdraw, and waves not yet sent
+   * are dropped.
+   */
+  kill?: { count: number; damageType?: string; whileChanged?: boolean; endsStage?: boolean };
+  /** The objective once the control is used (and its touch version). */
+  afterText?: string;
+  afterTouchText?: string;
+  /** Fill the Full Arms gauge when the stage starts. */
+  fillRelease?: boolean;
+  /** How many times the enemies deploy, each wave after the last one is destroyed (default 1). */
+  waves?: number;
+  /** Each wave is this many blocks of `spawn` (default 1), `groupSpacing` apart north to south. */
+  groups?: number;
+  groupSpacing?: number;
+  /** Distance between units in a block, in place of `formation.spacing` (smaller: a tighter block). */
+  spacing?: number;
+  /** Enemy groups that deploy `spawnDistance` east of the ace when the stage starts. */
+  spawn: { class: string; count: number }[];
+}
+
+/** The tutorial mission: the ace alone against small enemy groups, one control at a time. */
+export interface TutorialData {
+  playerStart: { x: number; y: number };
+  /**
+   * How far east of the ace each stage's enemies deploy: at least `spawnDistance`, and
+   * `spawnOffscreen` beyond the east edge of the view, so they walk in rather than appear.
+   */
+  spawnDistance: number;
+  spawnOffscreen: number;
+  /** Seconds between a cleared stage and the next one. */
+  stageGap: number;
+  /** Seconds before a stage's next wave deploys, or its group deploys again when the last wave is destroyed before its other goals are met. */
+  respawnGap: number;
+  /**
+   * At the start of each stage, and when the first mission takes over, the battle shifts in whole
+   * steps of this size so the ace is near the middle of the battlefield (1000: the ground grid's
+   * sector, so the grid looks the same).
+   */
+  recenterStep: number;
+  /** The ace's HP never drops below this share of its max HP, so the tutorial cannot be lost. */
+  hpFloor: number;
+  /**
+   * The battle that starts by itself `delay` seconds after the tutorial, without the launch
+   * sequence: the ace where it was, `allies` deploying just off the west edge of the view and
+   * `enemies` just off the east edge (`offscreen` beyond it, groups `groupSpacing` apart). `exact`
+   * fixes the count of those enemy classes (the rest follow the enemy mix).
+   */
+  followUp: { allies: number; enemies: number; exact: Record<string, number>; delay: number; offscreen: number; groupSpacing: number };
+  stages: TutorialStage[];
 }
 
 // ---------- Loadout ----------
@@ -645,6 +728,18 @@ export interface ReleaseCharge {
   closeKillMul: number;
   /** Per second, regardless of kills. */
   perSecond: number;
+  /** Per max HP of damage the ace takes (taking half its max HP adds half this). */
+  perHpTaken: number;
+  /** Near misses: enemy fire that passes within `radius` of the ace's edge without touching it. */
+  graze: {
+    radius: number;
+    /** Per flying shot that passes by. */
+    perShot: number;
+    /** Per line attack (lance, mega-beam, dash strike) that passes by. */
+    perLine: number;
+    /** At most one graze spark on the ace per this many seconds (the gauge still counts every graze). */
+    markGap: number;
+  };
 }
 
 /**

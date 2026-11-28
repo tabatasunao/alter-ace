@@ -43,5 +43,11 @@ export function dataStrings(catalog: Catalog): Record<string, string> {
   for (const a of catalog.armors) out[k.armorName(a.id)] = a.name;
   for (const [s, def] of Object.entries(catalog.frameBuild.stats)) out[k.statLabel(s)] = def.label;
   for (const m of catalog.loadout.medals) out[k.medalName(m.name)] = m.name;
+  for (const s of catalog.armies.tutorial.stages) {
+    out[k.tutorialText(s.id)] = s.text;
+    out[k.tutorialTouchText(s.id)] = s.touchText;
+    if (s.afterText) out[k.tutorialAfterText(s.id)] = s.afterText;
+    if (s.afterTouchText) out[k.tutorialAfterTouchText(s.id)] = s.afterTouchText;
+  }
   return out;
 }

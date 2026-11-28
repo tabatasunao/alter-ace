@@ -13,4 +13,8 @@ export const textKeys = {
   armorName: (id: string) => `armor.${id}.name`,
   statLabel: (stat: string) => `stat.${stat}.label`,
   medalName: (name: string) => `medal.${name}.name`,
+  tutorialText: (id: string) => `tutorial.${id}.text`,
+  tutorialTouchText: (id: string) => `tutorial.${id}.touchText`,
+  tutorialAfterText: (id: string) => `tutorial.${id}.afterText`,
+  tutorialAfterTouchText: (id: string) => `tutorial.${id}.afterTouchText`,
 };

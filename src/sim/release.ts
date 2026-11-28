@@ -3,23 +3,11 @@ import { kick } from './impact';
 import { addStatus } from './statuses';
 import { burstAll } from './weapons/firing';
 import type { World } from './World';
-import { msg } from './messages';
+
+export { chargeRelease } from './releaseCharge';
 
 /** The status that makes every weapon hardpoint fire during super release. */
 export const RELEASE_STATUS = 'superRelease';
-
-/**
- * Adds to the super release gauge, up to full. Nothing charges it while a release runs. Filling
- * it sends a ping wave out to the close-kill radius and a RELEASE READY callout.
- */
-export function chargeRelease(world: World, P: Player, amount: number): void {
-  if (P.release || P.releaseCharge >= 1) return;
-  P.releaseCharge = Math.min(1, P.releaseCharge + amount);
-  if (P.releaseCharge < 1) return;
-  const r = world.catalog.battle.player.superRelease.charge.closeRadius;
-  world.addFx({ type: 'pulse', x: P.x, y: P.y, r, t: 0, life: 0.55, tone: 'release' });
-  world.addFx({ type: 'callout', x: P.x, y: P.y - 34, t: 0, life: 0.9, msg: msg('callout.fullArmsReady'), tone: 'release', size: 13 });
-}
 
 /**
  * Full Arms, if the gauge is full: empties it, fires the opening burst and makes every weapon

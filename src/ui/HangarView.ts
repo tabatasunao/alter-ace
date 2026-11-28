@@ -1,6 +1,6 @@
 import type { Catalog } from '../data/catalog';
 import { FRAME_STATS, type FrameStat, type WeaponBehaviorName, type WeaponDef } from '../data/types';
-import { medalFor, nextMedal, type Career } from '../game/career';
+import { isFirstVisit, medalFor, nextMedal, type Career } from '../game/career';
 import { filledSlots, NAME_MAX, type LoadoutEditor } from '../game/loadout';
 import { rankLetter } from '../game/rating';
 import { formatNumber, t, tm } from '../i18n';
@@ -20,8 +20,14 @@ export interface HangarModel {
   readonly keys: () => KeyMap;
 }
 
-/** The pre-battle screen: hardpoints, frame build, aim mode and enemy count. Edits go to the LoadoutEditor. */
+/**
+ * The pre-battle screen: hardpoints, frame build, aim mode and enemy count. Edits go to the LoadoutEditor.
+ * On a first visit it shows the tutorial card in place of the loadout, so a new player is one
+ * press from the tutorial mission; "Customize loadout" opens the full hangar.
+ */
 export class HangarView {
+  /** The player opened the full hangar from the tutorial card. */
+  private customizing = false;
   private readonly el = {
     build: byId('build'),
     ptCount: byId('ptCount'),
@@ -51,7 +57,10 @@ export class HangarView {
     private readonly onChange: () => void,
     private readonly onLaunch: () => void,
     onOptions: () => void,
+    onTutorial: () => void,
   ) {
+    byId('btnTutorialStart').addEventListener('click', onTutorial);
+    byId('btnTutorial').addEventListener('click', onTutorial);
     byId('btnOptions').addEventListener('click', onOptions);
     root.addEventListener('click', (e) => this.onClick(e));
     this.el.enemyCount.addEventListener('input', () => {
@@ -61,6 +70,10 @@ export class HangarView {
       this.renderSummary();
     });
     this.el.launch.addEventListener('click', () => this.onLaunch());
+    byId('btnCustomize').addEventListener('click', () => {
+      this.customizing = true;
+      this.renderFirstVisit();
+    });
     this.el.aceName.maxLength = NAME_MAX;
     this.el.aceName.addEventListener('input', () => {
       this.model.editor.setName(this.el.aceName.value);
@@ -88,6 +101,7 @@ export class HangarView {
   render(): void {
     const { catalog, editor } = this.model;
     const sel = editor.value;
+    this.renderFirstVisit();
     this.renderBuild();
 
     this.el.aims.innerHTML = catalog.aimModes
@@ -143,6 +157,19 @@ export class HangarView {
     Object.assign(this.el.enemyCount, { min: String(min), max: String(max), step: String(step), value: String(sel.enemies) });
     this.renderArmy();
     this.renderSummary();
+  }
+
+  /** Whether the tutorial card is showing (Enter then starts the tutorial). */
+  get firstVisit(): boolean {
+    return isFirstVisit(this.model.career()) && !this.customizing;
+  }
+
+  /** The tutorial card instead of the loadout, until the first sortie or tutorial (or "Customize loadout"). */
+  private renderFirstVisit(): void {
+    const first = this.firstVisit;
+    this.root.classList.toggle('first', first);
+    // Enter starts the tutorial here, so the launch button steps back to a plain one.
+    this.el.launch.classList.toggle('btn-primary', !first);
   }
 
   /** The controls as one strip of key caps, from the current bindings. */

@@ -9,6 +9,8 @@ export interface Career {
   kills: Record<string, number>;
   /** The largest share of the enemy army destroyed (0–1) in any sortie, won or lost, keyed by army size. */
   furthest: Record<string, number>;
+  /** Firsts the game remembers: `launch` after the first sortie, `tutorial` after the tutorial mission is completed. */
+  learned: string[];
 }
 
 export type Medal = LoadoutData['medals'][number];
@@ -52,7 +54,22 @@ function numbers(raw: unknown): Record<string, number> {
 export function sanitizeCareer(raw: unknown): Career {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof Career, unknown>>;
   const furthest = Object.fromEntries(Object.entries(numbers(r.furthest)).filter(([, v]) => v <= 1));
-  return { best: numbers(r.best), kills: numbers(r.kills), furthest };
+  const learned = Array.isArray(r.learned) ? [...new Set(r.learned.filter((v): v is string => typeof v === 'string' && v.length > 0 && v.length <= 32))] : [];
+  return { best: numbers(r.best), kills: numbers(r.kills), furthest, learned };
+}
+
+/** The `learned` entries recorded at the first sortie and when the tutorial mission is completed. */
+export const FIRST_SORTIE = 'launch';
+export const TUTORIAL_DONE = 'tutorial';
+
+/** Whether the player has neither launched a sortie nor completed the tutorial (the hangar shows the first-visit card). */
+export function isFirstVisit(career: Career): boolean {
+  return !career.learned.includes(FIRST_SORTIE) && !career.learned.includes(TUTORIAL_DONE);
+}
+
+/** The career with `id` added to what the player has learned (the same career if it was there). */
+export function learn(career: Career, id: string): Career {
+  return career.learned.includes(id) ? career : { ...career, learned: [...career.learned, id] };
 }
 
 /** The highest medal reached with this many kills, or null. */
@@ -117,5 +134,5 @@ export function recordSortie(
   const progress = clamp(sortie.progress, 0, 1);
   const newFurthest = progress > (previousFurthest ?? 0);
   const furthest = newFurthest ? { ...career.furthest, [key]: progress } : { ...career.furthest };
-  return { career: { best, kills, furthest }, previousBest, newBest, previousFurthest, newFurthest, progress, medals: earned };
+  return { career: { best, kills, furthest, learned: [...career.learned] }, previousBest, newBest, previousFurthest, newFurthest, progress, medals: earned };
 }

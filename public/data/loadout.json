@@ -6,7 +6,7 @@
     "build": { "speed": 5, "hp": 5, "reload": 5, "fireRate": 5, "dash": 5 },
     "slots": ["bazooka", "rail", "sniper", "missile"],
     "aim": "closest",
-    "enemies": 450
+    "enemies": 300
   },
   "medals": [
     { "name": "Bronze", "kills": 100 },

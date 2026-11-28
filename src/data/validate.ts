@@ -16,6 +16,9 @@ function duplicates(ids: readonly string[]): string[] {
  * That every behavior/effect/strategy/shape name has an implementation is checked
  * separately, against the registries (see src/sim/registryCheck.ts).
  */
+/** What a tutorial stage's `keys` may name: the rebindable actions (src/game/settings.ts), and `slots` for every hardpoint. */
+const TUTORIAL_KEYS = new Set(['up', 'down', 'left', 'right', 'dash', 'release', 'aimPrev', 'aimNext', 'reload', 'pause', 'zoomIn', 'zoomOut', 'slots']);
+
 export function validateGameData(d: GameData): string[] {
   const errors: string[] = [];
   const check = (ok: boolean, message: string) => {
@@ -146,6 +149,45 @@ export function validateGameData(d: GameData): string[] {
   for (const id of Object.keys(a.minimums)) check(classIds.has(id), `armies.minimums: unknown unit class "${id}"`);
   check(a.battle.enemies.groups > 0 && a.battle.allies.groups > 0, 'armies.battle: groups must be > 0');
 
+  // Tutorial
+  const tu = a.tutorial;
+  if (!tu || !Array.isArray(tu.stages) || tu.stages.length === 0) {
+    errors.push('armies.tutorial.stages must be a non-empty list');
+  } else {
+    check(tu.recenterStep > 0, 'armies.tutorial.recenterStep must be > 0');
+    check(tu.spawnDistance > 0 && tu.spawnOffscreen >= 0 && tu.stageGap >= 0 && tu.respawnGap >= 0, 'armies.tutorial: need spawnDistance > 0, spawnOffscreen >= 0, stageGap >= 0 and respawnGap >= 0');
+    const fu = tu.followUp;
+    check(Number.isInteger(fu?.allies) && fu.allies >= 1 && Number.isInteger(fu.enemies) && fu.enemies >= 1 && fu.delay >= 0 && fu.offscreen >= 0 && fu.groupSpacing > 0,
+      'armies.tutorial.followUp: need whole allies >= 1 and enemies >= 1, delay >= 0, offscreen >= 0 and groupSpacing > 0');
+    const exact = Object.entries(fu?.exact ?? {});
+    for (const [id, n] of exact) check(classIds.has(id) && Number.isInteger(n) && n >= 0, `armies.tutorial.followUp.exact: unknown class "${id}" or count not a whole number >= 0`);
+    check(exact.reduce((sum, [, n]) => sum + n, 0) <= (fu?.enemies ?? 0), 'armies.tutorial.followUp.exact: more units than enemies');
+    check(tu.hpFloor > 0 && tu.hpFloor < 1, 'armies.tutorial.hpFloor must be between 0 and 1');
+    for (const id of duplicates(tu.stages.map((s) => s.id))) errors.push(`armies.tutorial: duplicate stage id "${id}"`);
+    const uses = new Set(['weapons', 'aim', 'dash', 'fullArms']);
+    for (const s of tu.stages) {
+      const at = `armies.tutorial.${s.id}`;
+      check(typeof s.text === 'string' && s.text.length > 0 && typeof s.touchText === 'string' && s.touchText.length > 0, `${at}: needs text and touchText`);
+      check(Array.isArray(s.keys) && s.keys.every((k) => TUTORIAL_KEYS.has(k)), `${at}.keys: each must be an action id or "slots"`);
+      check(s.keys.length === 0 || s.text.includes('{keys}'), `${at}: text with keys must contain {keys}`);
+      if (s.use !== undefined) check(uses.has(s.use), `${at}.use: unknown control "${s.use}"`);
+      if (s.groups !== undefined) check(s.spawn.length > 0 && Number.isInteger(s.groups) && s.groups >= 1 && (s.groups === 1 || (s.groupSpacing ?? 0) > 0), `${at}.groups: needs enemies, a whole number >= 1, and groupSpacing > 0 for more than one`);
+      if (s.spacing !== undefined) check(s.spacing > 0, `${at}.spacing must be > 0`);
+      if (s.waves !== undefined) check(s.spawn.length > 0 && Number.isInteger(s.waves) && s.waves >= 1, `${at}.waves: needs enemies, and a whole number >= 1`);
+      if (s.useCount !== undefined) check(!!s.use && Number.isInteger(s.useCount) && s.useCount >= 1, `${at}.useCount: needs a control to use, and a whole number >= 1`);
+      for (const m of s.markers ?? []) check(Number.isFinite(m.dx) && Number.isFinite(m.dy) && m.radius > 0, `${at}.markers: need numbers dx, dy and radius > 0`);
+      if (s.kill) {
+        check(!!s.use, `${at}.kill: needs a control to use (kills count after it)`);
+        check(Number.isInteger(s.kill.count) && s.kill.count > 0, `${at}.kill.count must be a whole number > 0`);
+        if (s.kill.damageType !== undefined) check(damageTypeIds.has(s.kill.damageType), `${at}.kill.damageType: unknown damage type "${s.kill.damageType}"`);
+      }
+      check((s.afterText === undefined) === (s.afterTouchText === undefined), `${at}: afterText and afterTouchText go together`);
+      if (s.afterText !== undefined) check(!!s.use && s.afterText.length > 0 && !!s.afterTouchText, `${at}.afterText: needs a control to use, and text`);
+      for (const g of s.spawn) check(classIds.has(g.class) && Number.isInteger(g.count) && g.count > 0, `${at}.spawn: unknown class "${g.class}" or count not a whole number > 0`);
+      check(!!s.markers?.length || !!s.use || s.spawn.length > 0, `${at}: needs a ring, a control to use or enemies, or it clears at once`);
+    }
+  }
+
   // Frame build
   const fb = d.frames;
   check(fb.points > 0 && Number.isInteger(fb.maxPerStat) && fb.maxPerStat > 0, 'frames: need points > 0 and a whole maxPerStat > 0');
@@ -203,6 +245,8 @@ export function validateGameData(d: GameData): string[] {
   const ch = sr.charge;
   check(ch.perKill >= 0 && ch.perSecond >= 0 && ch.closeRadius >= 0 && ch.closeKillMul >= 0, 'battle.player.superRelease.charge: values must be >= 0');
   check(ch.start >= 0 && ch.start <= 1, 'battle.player.superRelease.charge.start must be 0–1');
+  check(ch.perHpTaken >= 0, 'battle.player.superRelease.charge.perHpTaken must be >= 0');
+  check(!!ch.graze && ch.graze.radius > 0 && ch.graze.perShot >= 0 && ch.graze.perLine >= 0 && ch.graze.markGap >= 0, 'battle.player.superRelease.charge.graze: need radius > 0, and perShot, perLine and markGap >= 0');
   check(ch.perKill > 0 || ch.perSecond > 0, 'battle.player.superRelease.charge: perKill or perSecond must be > 0, or the gauge never refills');
   check(b.player.launch.speed >= 0 && b.player.launch.zoom > 0, 'battle.player.launch: need speed >= 0 and zoom > 0');
   const dg = b.player.dodge;
