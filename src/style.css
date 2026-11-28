@@ -52,7 +52,7 @@ body{margin:0;background:var(--field);color:var(--text);font:14px/1.5 var(--font
 button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 kbd{font:600 11px/1 var(--font-data);padding:3px 5px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:3px;color:var(--text);background:var(--panel-2)}
-#app{position:relative;width:100%;height:100%;overflow:hidden}
+#app{position:relative;width:100%;height:100%;overflow:hidden;visibility:visible}
 #world{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 
 /* ---------- Hangar ---------- */
