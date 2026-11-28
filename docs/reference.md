@@ -199,11 +199,11 @@ Impacts (hit-stop holds the simulation; shake is in CSS pixels; flash and red ed
 | Full-strength Railgun hit | a full-strength Railgun shot hits | 0.04 s | 6 | – | – | `impact.railFull` |
 | Shotgun shot | each Shotgun shot | – | 4.5 | – | – | `impact.shotgun` |
 | Launch | the ace boosts off at the end of the launch sequence | – | 10 | 0.45 | – | `impact.launch` |
-| Ace destroyed | then ×0.3 speed for 1.2 s | 0.25 s | 18 | 0.8 | 1 | `impact.aceDeath` |
+| Ace destroyed | then the battle-end slow motion | 0.25 s | 18 | 0.8 | 1 | `impact.aceDeath` |
 | Blast | radius 100+ within 600 of the ace (fades with distance) | – | 3 | – | – | `impact.blast` |
 | Wide beam | a hostile line attack 20+ wide within 450 of the ace (fades with distance) | – | 9 | 0.2 | – | `impact.beam` |
 
-Red edges fade over 0.45 s. No hit-stop starts within 0.3 s after the last one ends, except the ace's destruction. One of the ace's hits of 60+ damage makes the unit judder for 0.07 s.
+Every battle end (victory, defeat, the tutorial's last stage) runs at ×0.3 speed for 1.6 s of real time, after any hit-stop, easing back to full speed over the last 0.4 s. Red edges fade over 0.45 s. No hit-stop starts within 0.3 s after the last one ends, except the ace's destruction. One of the ace's hits of 60+ damage makes the unit judder for 0.07 s.
 
 Rating (won sorties): 10 points per enemy × pace (par 0.55 s per enemy ÷ clear time, 0.5–1.5) × integrity (1 − 0.08 per max HP of damage taken, at least 0.5) × allied line (1 + 0.3 × share of allies alive). Rank, from the score per enemy:
 

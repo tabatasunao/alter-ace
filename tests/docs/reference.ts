@@ -403,12 +403,12 @@ function rules(catalog: Catalog, out: string[]): void {
     impactRow('Full-strength Railgun hit', im.railFull, 'a full-strength Railgun shot hits', 'railFull'),
     impactRow('Shotgun shot', im.shotgun, 'each Shotgun shot', 'shotgun'),
     impactRow('Launch', im.launch, 'the ace boosts off at the end of the launch sequence', 'launch'),
-    impactRow('Ace destroyed', im.aceDeath, `then ${mul(im.aceDeath.slowScale)} speed for ${sec(im.aceDeath.slow)}`, 'aceDeath'),
+    impactRow('Ace destroyed', im.aceDeath, 'then the battle-end slow motion', 'aceDeath'),
     impactRow('Blast', im.blast, `radius ${n(im.blast.minRadius)}+ within ${n(im.blast.range)} of the ace (fades with distance)`, 'blast'),
     impactRow('Wide beam', im.beam, `a hostile line attack ${n(im.beam.minWidth)}+ wide within ${n(im.beam.range)} of the ace (fades with distance)`, 'beam'),
   ]);
   out.push(
-    `Red edges fade over ${sec(im.hurtTime)}. No hit-stop starts within ${sec(im.freezeGap)} after the last one ends, except the ace's destruction. One of the ace's hits of ${n(im.stagger.minDamage)}+ damage makes the unit judder for ${sec(im.stagger.time)}.`,
+    `Every battle end (victory, defeat, the tutorial's last stage) runs at ${mul(im.battleEnd.slowScale)} speed for ${sec(im.battleEnd.slow)} of real time, after any hit-stop, easing back to full speed over the last ${sec(im.battleEnd.ramp)}. Red edges fade over ${sec(im.hurtTime)}. No hit-stop starts within ${sec(im.freezeGap)} after the last one ends, except the ace's destruction. One of the ace's hits of ${n(im.stagger.minDamage)}+ damage makes the unit judder for ${sec(im.stagger.time)}.`,
     '',
   );
 

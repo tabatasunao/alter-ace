@@ -786,7 +786,12 @@ export interface ImpactData {
   /** The ace boosts off at the end of the launch sequence. */
   launch: ImpactDef;
   /** The ace is destroyed; then the battle runs at × `slowScale` speed for `slow` s. */
-  aceDeath: ImpactDef & { slow: number; slowScale: number };
+  aceDeath: ImpactDef;
+  /**
+   * Every battle end (victory, defeat, the tutorial's last stage) runs in slow motion: × `slowScale`
+   * for `slow` s of real time (after any hit-stop), easing back to full speed over the last `ramp` s.
+   */
+  battleEnd: { slow: number; slowScale: number; ramp: number };
   /** A blast of at least `minRadius` within `range` of the ace; the shake fades with distance. */
   blast: ImpactDef & { minRadius: number; range: number };
   /** A hostile line attack at least `minWidth` wide passing within `range` of the ace; fades with distance. */

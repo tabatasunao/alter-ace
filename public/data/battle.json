@@ -75,7 +75,8 @@
     "launch": { "freeze": 0, "shake": 10, "flash": 0.45 },
     "railFull": { "freeze": 0.04, "shake": 6, "flash": 0 },
     "clash": { "freeze": 0.09, "shake": 9, "flash": 0.35 },
-    "aceDeath": { "freeze": 0.25, "shake": 18, "flash": 0.8, "danger": true, "hurt": 1, "slow": 1.2, "slowScale": 0.3 },
+    "aceDeath": { "freeze": 0.25, "shake": 18, "flash": 0.8, "danger": true, "hurt": 1 },
+    "battleEnd": { "slow": 1.6, "slowScale": 0.3, "ramp": 0.4 },
     "blast": { "freeze": 0, "shake": 3, "flash": 0, "minRadius": 100, "range": 600 },
     "beam": { "freeze": 0, "shake": 9, "flash": 0.2, "minWidth": 20, "range": 450 },
     "stagger": { "minDamage": 60, "time": 0.07 }
@@ -97,5 +98,5 @@
   },
   "clash": { "acePush": 420, "unitPush": 520, "pushTime": 0.25 },
   "praise": { "killMilestone": 100, "streak": { "kills": 25, "window": 4, "cooldown": 15 }, "releaseMinKills": 10 },
-  "timing": { "maxFrameDt": 0.05, "resultDelay": 1.6, "demoResetDelay": 2.5, "bannerDuration": 2.8 }
+  "timing": { "maxFrameDt": 0.05, "resultDelay": 2.4, "demoResetDelay": 2.5, "bannerDuration": 2.8 }
 }

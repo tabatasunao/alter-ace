@@ -1,6 +1,6 @@
 import { textKeys } from '../data/textKeys';
 import { ENEMY, unitTone, type Hit, type Tone, type Unit } from './entities';
-import { kick, slowMotion } from './impact';
+import { kick } from './impact';
 import { chargeRelease } from './release';
 import type { World } from './World';
 
@@ -46,7 +46,6 @@ export function scoreDeath(world: World, u: Unit, { src, wid }: Hit): void {
   } else if (u.kind === 'player') {
     const death = world.catalog.battle.impact.aceDeath;
     kick(world, death, 1, true);
-    slowMotion(world, death.slow, death.slowScale);
     world.endBattle(false);
   } else {
     s.allyAlive--;

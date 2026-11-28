@@ -263,7 +263,8 @@ export function validateGameData(d: GameData): string[] {
   check(im.aceHit.fullShare > 0 && im.aceHit.react >= 0, 'battle.impact.aceHit: need fullShare > 0 and react >= 0');
   check(im.beam.minWidth >= 0 && im.beam.range > 0, 'battle.impact.beam: need minWidth >= 0 and range > 0');
   check(im.heavyHit.minShare > 0, 'battle.impact.heavyHit.minShare must be > 0');
-  check(im.aceDeath.slow >= 0 && im.aceDeath.slowScale > 0 && im.aceDeath.slowScale <= 1, 'battle.impact.aceDeath: need slow >= 0 and 0 < slowScale <= 1');
+  const end = im.battleEnd;
+  check(!!end && end.slow >= 0 && end.slowScale > 0 && end.slowScale <= 1 && end.ramp >= 0 && end.ramp <= end.slow, 'battle.impact.battleEnd: need slow >= 0, 0 < slowScale <= 1 and 0 <= ramp <= slow');
   check(im.blast.minRadius >= 0 && im.blast.range > 0, 'battle.impact.blast: need minRadius >= 0 and range > 0');
   check(im.stagger.minDamage > 0 && im.stagger.time >= 0, 'battle.impact.stagger: need minDamage > 0 and time >= 0');
 
