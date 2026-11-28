@@ -6,7 +6,7 @@ import { Combat } from './Combat';
 import type { Effect, Player, Projectile, Unit } from './entities';
 import type { BannerTone, GameEvents } from './events';
 import type { AceChargeLedger } from './ai/aceCharges';
-import { newImpactState, type ImpactState } from './impact';
+import { newImpactState, slowMotion, type ImpactState } from './impact';
 import { SpatialGrid } from './SpatialGrid';
 import { UnitFactory } from './UnitFactory';
 import { msg, type Message } from './messages';
@@ -133,12 +133,17 @@ export class World {
     this.events.emit('banner', { msg: message, tone, minor });
   }
 
-  /** Ends the battle, with a banner (victory or defeat unless `message` names another). */
+  /**
+   * Ends the battle, with a banner (victory or defeat unless `message` names another), and the
+   * battle-end slow motion so the moment lands.
+   */
   endBattle(win: boolean, message?: Message): void {
     if (this.status.over) return;
     this.status.over = true;
     this.status.win = win;
     this.status.endAt = this.t;
+    const end = this.catalog.battle.impact.battleEnd;
+    slowMotion(this, end.slow, end.slowScale);
     this.banner(message ?? msg(win ? 'banner.victory' : 'banner.defeat'), win ? 'good' : 'warn');
     this.events.emit('battleEnded', { win });
   }

@@ -53,7 +53,7 @@ A destroyed unit leaves debris, plus a blast for large units. Then:
 
 - **Enemy death:** the enemy count drops. If the killing hit came from an ace weapon (direct or splash), it counts as the ace's kill and in that weapon's tally, and charges the Full Arms gauge. Classes with `killBanner` (Commander, semi-aces) show a banner; an ace kill of one is a big-kill impact.
 - **Ally death:** the ally count drops.
-- **Ace death:** an impact with slow motion; the sortie ends in defeat.
+- **Ace death:** an impact; the sortie ends in defeat, in slow motion.
 
 ## Shields
 
@@ -230,13 +230,13 @@ Big moments land with hit-stop, screen shake and a screen flash (`battle.json` �
 | `slash` | One of the ace's saber slashes connects |
 | `railFull` | A full-strength Railgun shot (steady aim) hits at least one unit |
 | `shotgun` | Each Shotgun shot (a slight shake) |
-| `aceDeath` | The ace is destroyed; then slow motion |
+| `aceDeath` | The ace is destroyed |
 | `aceHit` | Any hit that lands on the ace, scaled by damage (full at `fullShare`, 6% of max HP). The ace also jolts for `react` (0.18 s) and a red ring pops off it |
 | `blast` | A blast of radius `minRadius` (100) or more within `range` (600) of the ace; strength fades with distance |
 | `beam` | A hostile line attack at least `minWidth` (20) wide passing within `range` (450) of the ace (the mega-beam); strength fades with distance |
 
 - **Hit-stop:** for `freeze` seconds the simulation holds. Effects keep aging, the camera keeps following, and shake and flash keep settling. A new hit-stop waits `freezeGap` (0.3 s) after the last one ends, except the ace's destruction.
-- **Slow motion:** after the ace's hit-stop, the battle runs at × `slowScale` (0.3) for `slow` (1.2 s) of real time.
+- **Slow motion:** every battle end (victory, defeat, the tutorial's last stage) runs at × `battleEnd.slowScale` (0.3) for `battleEnd.slow` (1.6 s) of real time, after any hit-stop, easing back to full speed over the last `battleEnd.ramp` (0.4 s).
 - **Shake and flash:** the stronger value wins. Shake settles over `shakeTime`; the flash fades over `flashTime`. Rendering reads them.
 - **Hurt edges:** an impact's `hurt` (0–1) reddens the screen edges, fading over `hurtTime` (0.45 s).
 - **Stagger:** an ace hit of `stagger.minDamage` (60) or more makes the unit judder for `stagger.time` (visual only).

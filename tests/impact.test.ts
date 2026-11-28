@@ -49,12 +49,33 @@ describe('impact: hit-stop, slow motion, shake and flash', () => {
     const sim = battlePipeline(still);
     world.combat.kill(world.player!, ARMY_HIT);
     expect(world.impact.freeze).toBe(im.aceDeath.freeze);
-    expect(world.impact.slow).toBe(im.aceDeath.slow);
+    expect(world.impact.slow).toBe(im.battleEnd.slow);
     expect(world.impact.flashDanger).toBe(true);
     run(world, sim, im.aceDeath.freeze + 0.05);
     world.addFx({ type: 'spark', x: 0, y: 0, t: 0, life: 5, tone: 'ally' });
     sim.step(world, 0.125);
-    expect(world.fx.at(-1)!.t).toBeCloseTo(0.125 * im.aceDeath.slowScale);
+    expect(world.fx.at(-1)!.t).toBeCloseTo(0.125 * im.battleEnd.slowScale);
+  });
+
+  it('a won battle also ends in slow motion, easing back to full speed at the end', () => {
+    const world = arena(catalog);
+    const sim = battlePipeline(still);
+    const end = im.battleEnd;
+    world.endBattle(true);
+    expect(world.impact.slow).toBe(end.slow);
+    expect(world.impact.slowScale).toBe(end.slowScale);
+    const tick = () => {
+      world.addFx({ type: 'spark', x: 0, y: 0, t: 0, life: 5, tone: 'ally' });
+      sim.step(world, 0.0625);
+      return world.fx.at(-1)!.t / 0.0625;
+    };
+    expect(tick()).toBeCloseTo(end.slowScale); // full slow motion
+    run(world, sim, end.slow - end.ramp / 2 - 0.0625); // halfway through the ease
+    const easing = tick();
+    expect(easing).toBeGreaterThan(end.slowScale);
+    expect(easing).toBeLessThan(1);
+    run(world, sim, end.ramp);
+    expect(tick()).toBeCloseTo(1); // back to full speed
   });
 
   it('every hit on the ace makes it jolt, pops a red ring, reddens the edges and shakes the view, scaled by damage', () => {

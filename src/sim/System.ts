@@ -10,7 +10,8 @@ export interface System {
 
 /**
  * Runs systems in order. During hit-stop (`world.impact.freeze`) only `duringFreeze` systems run;
- * during slow motion every system gets a scaled `dt`.
+ * during slow motion every system gets a scaled `dt`, easing back to full speed over the last
+ * `battleEnd.ramp` seconds.
  */
 export class Simulation {
   constructor(readonly systems: readonly System[]) {}
@@ -23,8 +24,10 @@ export class Simulation {
       return;
     }
     if (impact.slow > 0) {
+      const ramp = world.catalog.battle.impact.battleEnd.ramp;
+      const depth = ramp > 0 ? Math.min(1, impact.slow / ramp) : 1;
       impact.slow -= dt;
-      dt *= impact.slowScale;
+      dt *= 1 - (1 - impact.slowScale) * depth;
     }
     for (const system of this.systems) system.update(world, dt);
   }
